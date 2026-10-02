@@ -73,6 +73,21 @@ Rules belong to the dataset: they are saved as `satt-rules.json` in the folder, 
 
 **Tag matching** (Settings > General) applies to the Check for box, the rules and the colouring: **Strict** means a term must equal a whole comma-separated tag; **Lazy** means it may appear as a word or phrase inside a tag, so `beard` matches `raymond-cole beard` and `hair` matches `long hair` but not `hairy`.
 
+## Refine: a local AI pass
+
+The top of the middle pane has two modes: **Review** (the rules and the Check for list) and **Refine**. Refine sends the current image, an instruction and the current caption to a vision model running locally in [LM Studio](https://lmstudio.ai) and shows what came back as a diff against the caption, so you can see exactly what would be added, removed or changed before accepting any of it.
+
+**Setup:** start LM Studio's server with a vision model loaded (a model whose card says it accepts images; the tool checks). The address, API key, model name and timeout are the ones under Settings > AutoTagger > OpenAI (default `http://127.0.0.1:1234/v1`). Leave the model name empty to use whatever is loaded. Settings > UI has a *Refine* group for the reply's token budget (thinking counts against it), the temperature, and how large the image is when sent (1024 px on the long side by default; larger is slower and rarely captions better). Load the model with a context window of 16k-32k tokens: a very large window makes every run slow (measured on a 27B model: 10 minutes for 165 tokens at 111k, 4 seconds per image at 32k).
+
+**Running:** pick a **Skill** (an instruction file from the `skills` folder beside the program, editable in the box; *Save as...* keeps your edits as a new skill; the last two entries of the list, *Load a file...* and *Open skills folder...*, bring in any text file as the instruction or open the folder so you can edit the files in your own editor), then **Play**. The pane sizes itself: before a run, the caption box below gets the room; after a run, the two chip columns grow to fit the proposal as room permits. The status line shows the model's progress; **Stop** cancels. The toggles: **Think** lets the model reason before answering (on by default, and worth keeping on when rules are involved); **Send rules** includes this folder's rules and the Check for list in the request; **Schema** asks for the reply as strict JSON, which keeps the model from adding chatter.
+
+**Reading the result:** the current caption on the left, the proposal on the right, one chip per tag: green = added, red = removed, orange = changed (the same tag written differently, or a sentence with words changed; hover for the word diff), grey = unchanged. The proposal is also checked against the folder's rules, and any violation is named in the status line. Then:
+
+- **Take proposal** replaces the caption with the right side; **Keep current** leaves it.
+- Or click chips: on the right, a click drops that item (struck through); on the left, a click keeps a removed item (bold). **Apply chip choices** composes the result.
+
+Accepting only writes to the caption box, as if you had typed it; nothing reaches the file until you save (Ctrl+S). The proposal is kept per image while the folder is open, so you can move on and come back. **Logs** opens a window with every run's request, the model's reasoning, the reply and any error, with Copy.
+
 ## Editing tags
 
 Click into the tags line and edit it like any text. Your edit is applied to the image when you:

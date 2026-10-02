@@ -88,6 +88,13 @@ namespace BooruDatasetTagManager
             checkBoxRememberFolders = new System.Windows.Forms.CheckBox();
             checkBoxReopenLastFolder = new System.Windows.Forms.CheckBox();
             labelComfydbgPath = new System.Windows.Forms.Label();
+            labelRefine = new System.Windows.Forms.Label();
+            labelRefineMaxTokens = new System.Windows.Forms.Label();
+            numericRefineMaxTokens = new System.Windows.Forms.NumericUpDown();
+            labelRefineTemperature = new System.Windows.Forms.Label();
+            numericRefineTemperature = new System.Windows.Forms.NumericUpDown();
+            labelRefineImageSide = new System.Windows.Forms.Label();
+            numericRefineImageSide = new System.Windows.Forms.NumericUpDown();
             textBoxComfydbgPath = new System.Windows.Forms.TextBox();
             comboBoxColorScheme = new System.Windows.Forms.ComboBox();
             tabTranslations = new Manina.Windows.Forms.Tab();
@@ -614,6 +621,13 @@ namespace BooruDatasetTagManager
             tabUI.Controls.Add(checkBoxRememberFolders);
             tabUI.Controls.Add(checkBoxReopenLastFolder);
             tabUI.Controls.Add(labelComfydbgPath);
+            tabUI.Controls.Add(labelRefine);
+            tabUI.Controls.Add(labelRefineMaxTokens);
+            tabUI.Controls.Add(numericRefineMaxTokens);
+            tabUI.Controls.Add(labelRefineTemperature);
+            tabUI.Controls.Add(numericRefineTemperature);
+            tabUI.Controls.Add(labelRefineImageSide);
+            tabUI.Controls.Add(numericRefineImageSide);
             tabUI.Controls.Add(textBoxComfydbgPath);
             tabUI.Controls.Add(labelPreviewLocation);
             tabUI.Controls.Add(labelColorScheme);
@@ -720,6 +734,50 @@ namespace BooruDatasetTagManager
             textBoxComfydbgPath.Name = "textBoxComfydbgPath";
             textBoxComfydbgPath.Size = new System.Drawing.Size(300, 23);
             textBoxComfydbgPath.TabIndex = 11;
+            //
+            // Refine (LM Studio pass): labelRefine, numericRefineMaxTokens, numericRefineTemperature, numericRefineImageSide
+            //
+            labelRefine.AutoSize = true;
+            labelRefine.Location = new System.Drawing.Point(9, 365);
+            labelRefine.Name = "labelRefine";
+            labelRefine.Size = new System.Drawing.Size(280, 15);
+            labelRefine.Text = "Refine (server, key, model and timeout: AutoTagger tab, OpenAI)";
+            labelRefineMaxTokens.AutoSize = true;
+            labelRefineMaxTokens.Location = new System.Drawing.Point(9, 392);
+            labelRefineMaxTokens.Name = "labelRefineMaxTokens";
+            labelRefineMaxTokens.Text = "Max reply tokens (thinking counts)";
+            numericRefineMaxTokens.Location = new System.Drawing.Point(300, 389);
+            numericRefineMaxTokens.Maximum = new decimal(new int[] { 65536, 0, 0, 0 });
+            numericRefineMaxTokens.Minimum = new decimal(new int[] { 256, 0, 0, 0 });
+            numericRefineMaxTokens.Increment = new decimal(new int[] { 256, 0, 0, 0 });
+            numericRefineMaxTokens.Name = "numericRefineMaxTokens";
+            numericRefineMaxTokens.Size = new System.Drawing.Size(100, 23);
+            numericRefineMaxTokens.TabIndex = 12;
+            numericRefineMaxTokens.Value = new decimal(new int[] { 4096, 0, 0, 0 });
+            labelRefineTemperature.AutoSize = true;
+            labelRefineTemperature.Location = new System.Drawing.Point(9, 421);
+            labelRefineTemperature.Name = "labelRefineTemperature";
+            labelRefineTemperature.Text = "Temperature (0 = most literal)";
+            numericRefineTemperature.DecimalPlaces = 2;
+            numericRefineTemperature.Increment = new decimal(new int[] { 5, 0, 0, 131072 });
+            numericRefineTemperature.Location = new System.Drawing.Point(300, 418);
+            numericRefineTemperature.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
+            numericRefineTemperature.Name = "numericRefineTemperature";
+            numericRefineTemperature.Size = new System.Drawing.Size(100, 23);
+            numericRefineTemperature.TabIndex = 13;
+            numericRefineTemperature.Value = new decimal(new int[] { 30, 0, 0, 131072 });
+            labelRefineImageSide.AutoSize = true;
+            labelRefineImageSide.Location = new System.Drawing.Point(9, 450);
+            labelRefineImageSide.Name = "labelRefineImageSide";
+            labelRefineImageSide.Text = "Image sent at most this many pixels on the long side";
+            numericRefineImageSide.Location = new System.Drawing.Point(300, 447);
+            numericRefineImageSide.Maximum = new decimal(new int[] { 4096, 0, 0, 0 });
+            numericRefineImageSide.Minimum = new decimal(new int[] { 256, 0, 0, 0 });
+            numericRefineImageSide.Increment = new decimal(new int[] { 128, 0, 0, 0 });
+            numericRefineImageSide.Name = "numericRefineImageSide";
+            numericRefineImageSide.Size = new System.Drawing.Size(100, 23);
+            numericRefineImageSide.TabIndex = 14;
+            numericRefineImageSide.Value = new decimal(new int[] { 1024, 0, 0, 0 });
             // 
             // comboBoxColorScheme
             // 
@@ -974,6 +1032,13 @@ namespace BooruDatasetTagManager
         private System.Windows.Forms.CheckBox checkBoxRememberFolders;
         private System.Windows.Forms.CheckBox checkBoxReopenLastFolder;
         private System.Windows.Forms.Label labelComfydbgPath;
+        private System.Windows.Forms.Label labelRefine;
+        private System.Windows.Forms.Label labelRefineMaxTokens;
+        private System.Windows.Forms.NumericUpDown numericRefineMaxTokens;
+        private System.Windows.Forms.Label labelRefineTemperature;
+        private System.Windows.Forms.NumericUpDown numericRefineTemperature;
+        private System.Windows.Forms.Label labelRefineImageSide;
+        private System.Windows.Forms.NumericUpDown numericRefineImageSide;
         private System.Windows.Forms.TextBox textBoxComfydbgPath;
         private System.Windows.Forms.CheckBox checkBoxCacheImages;
         private System.Windows.Forms.CheckBox checkBoxIncludeSubfolders;

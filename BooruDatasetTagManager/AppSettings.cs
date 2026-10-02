@@ -68,6 +68,15 @@ namespace BooruDatasetTagManager
         public DazzleRules.TagMatch DazzleTagMatch { get; set; } = DazzleRules.TagMatch.Strict;
         public int DazzleBrowseWidth { get; set; } = 0;    // Browse folders dialog size; 0 = default
         public int DazzleBrowseHeight { get; set; } = 0;
+        public bool DazzleRefineMode { get; set; } = false;      // middle pane top: false = Review, true = Refine
+        public bool DazzleRefineThink { get; set; } = true;      // user, 2026-10-02: reasoning on by default, their choice
+        public bool DazzleRefineSendRules { get; set; } = true;
+        public bool DazzleRefineSchema { get; set; } = true;
+        public string DazzleRefineSkill { get; set; } = "";
+        public int DazzleRefineInstructionHeight { get; set; } = 0;   // 0 = five lines of the grid font
+        public int DazzleRefineMaxTokens { get; set; } = 4096;        // the reply's budget; thinking counts against it
+        public float DazzleRefineTemperature { get; set; } = 0.3f;
+        public int DazzleRefineImageLongSide { get; set; } = 1024;    // images are downscaled to this before sending
 
         public bool LoadSettingsLoadPreviewImages { get; set; } = true;
         public bool LoadSettingsReadMetadata { get; set; } = false;
@@ -149,6 +158,15 @@ namespace BooruDatasetTagManager
                 DazzleTagMatch = tempSettings.DazzleTagMatch;
                 DazzleBrowseWidth = tempSettings.DazzleBrowseWidth;
                 DazzleBrowseHeight = tempSettings.DazzleBrowseHeight;
+                DazzleRefineMode = tempSettings.DazzleRefineMode;
+                DazzleRefineThink = tempSettings.DazzleRefineThink;
+                DazzleRefineSendRules = tempSettings.DazzleRefineSendRules;
+                DazzleRefineSchema = tempSettings.DazzleRefineSchema;
+                DazzleRefineSkill = tempSettings.DazzleRefineSkill ?? "";
+                DazzleRefineInstructionHeight = tempSettings.DazzleRefineInstructionHeight;
+                DazzleRefineMaxTokens = tempSettings.DazzleRefineMaxTokens > 0 ? tempSettings.DazzleRefineMaxTokens : 4096;
+                DazzleRefineTemperature = tempSettings.DazzleRefineTemperature;
+                DazzleRefineImageLongSide = tempSettings.DazzleRefineImageLongSide > 0 ? tempSettings.DazzleRefineImageLongSide : 1024;
                 LoadSettingsLoadPreviewImages = tempSettings.LoadSettingsLoadPreviewImages;
                 LoadSettingsReadMetadata = tempSettings.LoadSettingsReadMetadata;
                 if (!string.IsNullOrEmpty(tempSettings.ColorScheme))

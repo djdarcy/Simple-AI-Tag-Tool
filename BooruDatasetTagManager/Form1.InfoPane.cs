@@ -258,6 +258,7 @@ namespace BooruDatasetTagManager
                 return;
             }
             currentInfo = DazzleImageInfo.Collect(imgPath, img, previewLoadWatch.Elapsed, previewFromCache, 0, 0, Math.Max(1, gridViewDS.SelectedRows.Count));
+            RenderProposalForCurrentImage();
             currentInfo.DecodeFailed = img == null;
             currentInfo.UniqueColorsNote = img == null ? "not counted (image could not be decoded)" : "counting...";
             currentInfo.ExtractedNote = "reading...";

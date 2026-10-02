@@ -57,6 +57,9 @@ namespace BooruDatasetTagManager
             checkBoxRememberFolders.Checked = Program.Settings.DazzleRememberFolders;
             checkBoxReopenLastFolder.Checked = Program.Settings.DazzleReopenLastFolder;
             textBoxComfydbgPath.Text = Program.Settings.DazzleComfydbgPath;
+            numericRefineMaxTokens.Value = Math.Max(numericRefineMaxTokens.Minimum, Math.Min(numericRefineMaxTokens.Maximum, Program.Settings.DazzleRefineMaxTokens));
+            numericRefineTemperature.Value = Math.Max(0, Math.Min(numericRefineTemperature.Maximum, (decimal)Program.Settings.DazzleRefineTemperature));
+            numericRefineImageSide.Value = Math.Max(numericRefineImageSide.Minimum, Math.Min(numericRefineImageSide.Maximum, Program.Settings.DazzleRefineImageLongSide));
             numericUpDown3.Value = Program.Settings.GridViewRowHeight;
             label11.Text = Program.Settings.GridViewFont.ToString();
             gridFontSettings = Program.Settings.GridViewFont;
@@ -139,6 +142,9 @@ namespace BooruDatasetTagManager
             Program.Settings.DazzleRememberFolders = checkBoxRememberFolders.Checked;
             Program.Settings.DazzleReopenLastFolder = checkBoxReopenLastFolder.Checked;
             Program.Settings.DazzleComfydbgPath = string.IsNullOrWhiteSpace(textBoxComfydbgPath.Text) ? "comfydbg" : textBoxComfydbgPath.Text.Trim();
+            Program.Settings.DazzleRefineMaxTokens = (int)numericRefineMaxTokens.Value;
+            Program.Settings.DazzleRefineTemperature = (float)numericRefineTemperature.Value;
+            Program.Settings.DazzleRefineImageLongSide = (int)numericRefineImageSide.Value;
             if (!checkBoxRememberFolders.Checked)
                 Program.RecentFolders?.Clear(); // "don't remember" means forget what is already stored
             Program.Settings.GridViewRowHeight = (int)numericUpDown3.Value;

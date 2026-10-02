@@ -165,8 +165,9 @@ namespace BooruDatasetTagManager
             checkLabel.Dock = DockStyle.Top;
             checkLabel.AutoSize = true;
             checkLabel.Padding = new Padding(2, 4, 2, 4);
-            // the Rules pane sits above the Check for box, both in the middle pane's top half
-            splitMiddle.Panel1.Controls.Add(BuildRulesPane(checkLabel, textBoxCheck));
+            // the Rules pane sits above the Check for box, both in the middle pane's top half (the Review mode);
+            // the Refine mode (LM Studio pass) swaps in for both, with the caption box below shared
+            splitMiddle.Panel1.Controls.Add(BuildMiddleTop(BuildRulesPane(checkLabel, textBoxCheck)));
 
             recolorTimer = new Timer();
             recolorTimer.Interval = 150;

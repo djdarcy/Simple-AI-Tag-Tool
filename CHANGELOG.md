@@ -4,6 +4,18 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.12.0] - 2026-10-02
+
+### Added
+
+- **Refine: a local AI pass with a diff.** The middle pane's top half now has two modes, **Review** (rules and the Check for list, as before) and **Refine**. Refine sends the image, an instruction and the current caption to a vision model in LM Studio (or any OpenAI-compatible server; the address, key, model and timeout are the existing Settings > AutoTagger > OpenAI values) and shows the reply beside the current caption as coloured chips: green added, red removed, orange changed, grey unchanged; a sentence item carries a word-level diff in its tooltip. *Take proposal*, *Keep current*, or click chips to drop or keep individual items and *Apply chip choices*. Accepting writes to the caption box only; Ctrl+S saves as always.
+- **Skills:** the instruction comes from a dropdown of files in a `skills` folder beside the program (two are written on first use: *Describe the subject* and *Inventory the objects*); the text is editable in place and *Save as...* adds a new skill. The list ends with *Load a file...* (any text file as the instruction) and *Open skills folder...* (edit the files in your own editor).
+- **Think / Send rules / Schema** toggles: let the model reason first (on by default; off sends `reasoning_effort: none`), include the folder's rules and the Check for list in the request (on by default), and ask for the reply as strict JSON (on; falls back to free text if the server refuses). The model's reasoning streams into the status line and the **Logs** window, which keeps every run's request, reasoning, reply and errors.
+- A proposal is checked by the same rules engine as the caption before it is shown; rule violations appear in the status line.
+- The middle splitter fits itself when the Refine pane renders: before a run the chip area is just tall enough for the current caption and the caption box below gets the room to type; after a run the chip columns grow to fit the proposal as room permits, the caption box keeping the height its lines need. Dragging it by hand holds until the next image.
+- Settings > UI gains a **Refine** group: max reply tokens (4096), temperature (0.3) and the image's long side when sent (1024 px). The server address, key, model and timeout are the AutoTagger tab's OpenAI values. A circled **?** on the Refine strip opens the guide's Refine section; every toggle explains itself on hover.
+- **Play / Stop** (a green triangle and a red square): Stop cancels the request, and LM Studio stops generating when the connection closes. Before a run the server is probed: a model that is not loaded is refused rather than loaded from disk, and a context window above 32k tokens is flagged (measured: 0.27 tokens/s at 111k vs 4 s per image at 32k on the same model).
+
 ## [2.11.1] - 2026-10-02
 
 ### Changed
