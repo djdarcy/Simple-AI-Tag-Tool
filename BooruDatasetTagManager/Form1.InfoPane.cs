@@ -17,6 +17,8 @@ namespace BooruDatasetTagManager
     public partial class MainForm
     {
         private SplitContainer splitPreview;        // preview on top, info pane below
+        private DazzleImageView imageView;          // the zoom / pan / selection viewer
+        private string baseTitle;                   // "Simple-AI-Tag-Tool 2.8.0", captured once
         private SplitContainer splitExtracted;      // tree on top, the selected node's full text below
         private TabControl tabsInfo;
         private TextBox textDetail;
@@ -35,9 +37,15 @@ namespace BooruDatasetTagManager
         {
             splitPreview = new SplitContainer { Name = "splitPreview", Dock = DockStyle.Fill, Orientation = Orientation.Horizontal, SplitterWidth = 5 };
 
-            // move the picture box from the preview tab into the top half
+            // the top half is the zoomable viewer; upstream's picture box stays, hidden, because
+            // upstream code still assigns its Image (ShowPreview hands the same Image to the viewer)
             tabPreview.Controls.Remove(pictureBoxPreview);
+            pictureBoxPreview.Visible = false;
             splitPreview.Panel1.Controls.Add(pictureBoxPreview);
+            imageView = new DazzleImageView { Name = "imageView", Dock = DockStyle.Fill };
+            imageView.MouseDown += (s, e) => gridViewDS.Focus();   // a click here returns the keyboard to navigation
+            imageView.ViewChanged += (s, e) => OnViewChanged();
+            splitPreview.Panel1.Controls.Add(imageView);
             tabPreview.Controls.Add(splitPreview);
 
             listInfo = new ListView
@@ -114,6 +122,53 @@ namespace BooruDatasetTagManager
             menuInfoPane = new ToolStripMenuItem("Image info pane") { Name = "MenuDazzleInfoPane", CheckOnClick = true, Checked = Program.Settings.DazzleInfoPaneVisible };
             menuInfoPane.Click += (s, e) => SetInfoPaneVisible(menuInfoPane.Checked);
             viewToolStripMenuItem.DropDownItems.Add(menuInfoPane);
+        }
+
+        /// <summary>Hand the preview image to the viewer (null clears it).</summary>
+        private void ShowInViewer(Image img)
+        {
+            imageView?.SetImage(img);
+        }
+
+        /// <summary>
+        /// Title bar like IrfanView's: "file - Simple-AI-Tag-Tool 2.8.0 (Zoom: 4876 x 6502, 635 %)
+        /// (Selection: 10, 9; 55 x 41; 1.341)", and the live Zoom / Selection rows of the info pane.
+        /// Cheap on purpose: it runs on every pan and drag.
+        /// </summary>
+        private void OnViewChanged()
+        {
+            if (baseTitle == null) baseTitle = Text;
+            if (imageView?.Image == null || currentInfo == null)
+            {
+                Text = baseTitle;
+                return;
+            }
+            var shown = imageView.DisplayedSize;
+            string title = $"{currentInfo.FileName} - {baseTitle} (Zoom: {shown.Width} x {shown.Height}, {ZoomPercent()})";
+            if (imageView.HasSelection)
+            {
+                var s = imageView.Selection;
+                title += $" (Selection: {s.X}, {s.Y}; {s.Width} x {s.Height}; {imageView.SelectionRatio:0.000})";
+            }
+            Text = title;
+            SetViewRows();
+        }
+
+        private string ZoomPercent() => (imageView.Zoom * 100).ToString(imageView.Zoom * 100 < 10 ? "0.0" : "0") + " %";
+
+        /// <summary>Update only the two live rows, not the whole list (this runs on every mouse move).</summary>
+        private void SetViewRows()
+        {
+            if (listInfo == null || splitPreview.Panel2Collapsed) return;
+            foreach (ListViewItem item in listInfo.Items)
+            {
+                if (item.Text == "Zoom")
+                    item.SubItems[1].Text = imageView?.Image == null ? "" : $"{ZoomPercent()}  (shown as {imageView.DisplayedSize.Width} x {imageView.DisplayedSize.Height})";
+                else if (item.Text == "Selection")
+                    item.SubItems[1].Text = imageView != null && imageView.HasSelection
+                        ? $"{imageView.Selection.X}, {imageView.Selection.Y};  {imageView.Selection.Width} x {imageView.Selection.Height} px;  ratio {imageView.SelectionRatio:0.000}"
+                        : "none  (drag on the image)";
+            }
         }
 
         /// <summary>After the layout has settled: give the pane its saved height.</summary>
@@ -315,6 +370,8 @@ namespace BooruDatasetTagManager
                 Row("Print size", info.PrintSize);
                 Row("Colours", info.ColorDepth);
                 Row("Unique colours", info.UniqueColors is long c ? c.ToString("N0") : (info.UniqueColorsNote ?? ""));
+                Row("Zoom", "");
+                Row("Selection", "");
                 // computed now, not when the image was collected: the first image is shown while the
                 // dataset is still filling, so a stored count would read "1 / 1"
                 var (position, total) = DatasetPosition(info.Path);
@@ -327,6 +384,7 @@ namespace BooruDatasetTagManager
                 Row("Attributes", info.FileMissing ? "" : info.AttributesText);
             }
             listInfo.EndUpdate();
+            SetViewRows();
             buttonOpenFile.Enabled = buttonOpenFolder.Enabled = info != null && !info.FileMissing;
             RenderExtracted(info);
         }

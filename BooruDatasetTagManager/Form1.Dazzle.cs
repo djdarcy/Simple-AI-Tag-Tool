@@ -705,6 +705,29 @@ namespace BooruDatasetTagManager
                             return true;
                         }
                         break;
+                    case "DazzleZoomIn":
+                    case "DazzleZoomIn2":
+                    case "DazzleZoomOut":
+                    case "DazzleZoomOut2":
+                    case "DazzleZoomFit":
+                    case "DazzleZoomActual":
+                    case "DazzleZoomSelection":
+                    case "DazzleClearSelection":
+                        // the viewer owns the mouse, the window owns the keyboard: zoom keys live here
+                        if (!typing && imageView?.Image != null && !gridViewTags.IsCurrentCellInEditMode)
+                        {
+                            switch (item.Id)
+                            {
+                                case "DazzleZoomIn": case "DazzleZoomIn2": imageView.ZoomIn(); break;
+                                case "DazzleZoomOut": case "DazzleZoomOut2": imageView.ZoomOut(); break;
+                                case "DazzleZoomFit": imageView.ZoomToFit(); break;
+                                case "DazzleZoomActual": imageView.ZoomActual(); break;
+                                case "DazzleZoomSelection": if (!imageView.HasSelection) return false; imageView.ZoomToSelection(); break;
+                                case "DazzleClearSelection": if (!imageView.HasSelection) return false; imageView.ClearSelection(); break;
+                            }
+                            return true;
+                        }
+                        break;
                     case "DazzleLeaveBox":
                         if (inTagsBox)
                         {

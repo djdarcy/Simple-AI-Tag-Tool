@@ -94,6 +94,14 @@ namespace BooruDatasetTagManager
             Items.Add(new HotkeyItem("DazzleFirstImage", "First image (when not typing)", Keys.Home, false, false, false));
             Items.Add(new HotkeyItem("DazzleLastImage", "Last image (when not typing)", Keys.End, false, false, false));
             Items.Add(new HotkeyItem("DazzleInfoPane", "Show / hide the image info pane (when not typing)", Keys.I, false, false, false));
+            Items.Add(new HotkeyItem("DazzleZoomIn", "Zoom in (when not typing)", Keys.Oemplus, false, false, false));
+            Items.Add(new HotkeyItem("DazzleZoomIn2", "Zoom in, second key (when not typing)", Keys.Add, false, false, false));
+            Items.Add(new HotkeyItem("DazzleZoomOut", "Zoom out (when not typing)", Keys.OemMinus, false, false, false));
+            Items.Add(new HotkeyItem("DazzleZoomOut2", "Zoom out, second key (when not typing)", Keys.Subtract, false, false, false));
+            Items.Add(new HotkeyItem("DazzleZoomFit", "Fit the image to the preview (when not typing)", Keys.D0, false, false, false));
+            Items.Add(new HotkeyItem("DazzleZoomActual", "Show the image at 100% (when not typing)", Keys.D1, false, false, false));
+            Items.Add(new HotkeyItem("DazzleZoomSelection", "Zoom to the selection (when not typing)", Keys.Enter, false, false, false));
+            Items.Add(new HotkeyItem("DazzleClearSelection", "Clear the selection (when not typing)", Keys.Escape, false, false, false));
         }
 
         public void ChangeLanguage()

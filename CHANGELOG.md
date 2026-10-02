@@ -4,6 +4,12 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.9.0] - 2026-10-02
+
+### Added
+
+- **Zoom, pan and selection in the preview, IrfanView-style.** Wheel zooms about the pointer; left-drag draws a selection rectangle that stays, with handles to resize it and dragging to move it; a click inside it (magnifier cursor) zooms to it; right-drag pans with a hand cursor; double-click fits. Keys **+** / **−**, **0** fit, **1** 100%, **Enter** zoom to selection, **Esc** clear it, all remappable. The title bar shows the displayed size, zoom percentage and the selection's position, size and ratio as IrfanView does; the info pane gains live *Zoom* and *Selection* rows. Fit never enlarges a small image past 100%.
+
 ## [2.8.0] - 2026-10-01
 
 ### Added

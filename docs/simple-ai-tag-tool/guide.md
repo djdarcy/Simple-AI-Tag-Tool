@@ -61,6 +61,25 @@ Click into the tags line and edit it like any text. Your edit is applied to the 
 
 Nothing is written to disk until you save (**Ctrl+S**, or File > Save all changes), as in the original program. When you select several images at once, the middle pane switches to the *Grid* tab, which edits the tags of all selected images together.
 
+## Zoom, pan and select in the preview
+
+The preview works like IrfanView's window:
+
+| Mouse | Does |
+|---|---|
+| Wheel | Zoom in or out about the pointer |
+| Left-drag on the image | Draw a selection rectangle; it stays until you clear it |
+| Drag a handle on the rectangle | Resize it |
+| Drag inside the rectangle | Move it |
+| Click inside the rectangle (magnifier cursor) | Zoom so the selection fills the preview; the rectangle stays |
+| Click outside the rectangle | Clear it |
+| Right-drag (hand cursor) | Pan |
+| Double-click | Fit the image to the preview again |
+
+The title bar shows the zoom as IrfanView does: `img03.png - Simple-AI-Tag-Tool 2.8.0 (Zoom: 4876 x 6502, 635 %) (Selection: 10, 9; 55 x 41; 1.341)`, the displayed size, the zoom percentage, and the selection's position, size in image pixels and width-to-height ratio. The info pane's *Zoom* and *Selection* rows show the same live.
+
+Keys (when you are not typing; all changeable in Settings > Hotkeys): **+** / **−** zoom, **0** fit, **1** 100%, **Enter** zoom to the selection, **Esc** clear it. Fitting never enlarges a small image past 100%. Moving to another image resets the zoom and clears the selection.
+
 ## The image info pane
 
 Under the preview sits a pane with everything about the current image. Press **I** (when you are not typing), or use View > *Image info pane*, to show or hide it; its size and visibility are remembered.
@@ -86,6 +105,9 @@ Everything here is read in the background, so moving between images never waits 
 | Previous image | Backspace, or Left | when you are not typing in a text box |
 | First image / last image | Home / End | when you are not typing in a text box |
 | Show / hide the image info pane | I | when you are not typing in a text box |
+| Zoom in / out | + / − (also numpad + / −) | when you are not typing in a text box |
+| Fit the image / show at 100% | 0 / 1 | when you are not typing in a text box |
+| Zoom to the selection / clear it | Enter / Esc | when a selection exists and you are not typing |
 | Next image | Alt+Right | anywhere, also while typing |
 | Previous image | Alt+Left | anywhere, also while typing |
 | Next image | PageDown | inside the tags or Check for box |

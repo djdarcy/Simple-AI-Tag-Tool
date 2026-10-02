@@ -321,6 +321,7 @@ namespace BooruDatasetTagManager
                     pictureBoxPreview.Image?.Dispose();
                 pictureBoxPreview.Image = img;
                 UpdateInfoPane(imgPath, img);
+                ShowInViewer(img);
             }
         }
 
@@ -331,6 +332,7 @@ namespace BooruDatasetTagManager
                 pictureBoxPreview.Image?.Dispose();
             pictureBoxPreview.Image = null;
             UpdateInfoPane(null, null);
+            ShowInViewer(null);
         }
 
         private async void LoadSelectedImageToGrid()
