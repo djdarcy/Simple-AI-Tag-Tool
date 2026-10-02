@@ -62,6 +62,9 @@ namespace BooruDatasetTagManager
         public EndOfFolderAction DazzleEndOfFolder { get; set; } = EndOfFolderAction.Loop;
         public bool DazzleRememberFolders { get; set; } = true;
         public bool DazzleReopenLastFolder { get; set; } = true;
+        public bool DazzleInfoPaneVisible { get; set; } = true;
+        public int DazzleInfoPaneHeight { get; set; } = 0;   // 0 = default split
+        public string DazzleComfydbgPath { get; set; } = "comfydbg";
 
         public bool LoadSettingsLoadPreviewImages { get; set; } = true;
         public bool LoadSettingsReadMetadata { get; set; } = false;
@@ -137,6 +140,9 @@ namespace BooruDatasetTagManager
                 DazzleEndOfFolder = tempSettings.DazzleEndOfFolder;
                 DazzleRememberFolders = tempSettings.DazzleRememberFolders;
                 DazzleReopenLastFolder = tempSettings.DazzleReopenLastFolder;
+                DazzleInfoPaneVisible = tempSettings.DazzleInfoPaneVisible;
+                DazzleInfoPaneHeight = tempSettings.DazzleInfoPaneHeight;
+                DazzleComfydbgPath = string.IsNullOrWhiteSpace(tempSettings.DazzleComfydbgPath) ? "comfydbg" : tempSettings.DazzleComfydbgPath;
                 LoadSettingsLoadPreviewImages = tempSettings.LoadSettingsLoadPreviewImages;
                 LoadSettingsReadMetadata = tempSettings.LoadSettingsReadMetadata;
                 if (!string.IsNullOrEmpty(tempSettings.ColorScheme))

@@ -85,6 +85,8 @@ namespace BooruDatasetTagManager
             comboBoxEndOfFolder = new System.Windows.Forms.ComboBox();
             checkBoxRememberFolders = new System.Windows.Forms.CheckBox();
             checkBoxReopenLastFolder = new System.Windows.Forms.CheckBox();
+            labelComfydbgPath = new System.Windows.Forms.Label();
+            textBoxComfydbgPath = new System.Windows.Forms.TextBox();
             comboBoxColorScheme = new System.Windows.Forms.ComboBox();
             tabTranslations = new Manina.Windows.Forms.Tab();
             tabInterrogator = new Manina.Windows.Forms.Tab();
@@ -594,6 +596,8 @@ namespace BooruDatasetTagManager
             tabUI.Controls.Add(comboBoxEndOfFolder);
             tabUI.Controls.Add(checkBoxRememberFolders);
             tabUI.Controls.Add(checkBoxReopenLastFolder);
+            tabUI.Controls.Add(labelComfydbgPath);
+            tabUI.Controls.Add(textBoxComfydbgPath);
             tabUI.Controls.Add(labelPreviewLocation);
             tabUI.Controls.Add(labelColorScheme);
             tabUI.Controls.Add(LabelLanguage);
@@ -687,6 +691,18 @@ namespace BooruDatasetTagManager
             checkBoxReopenLastFolder.TabIndex = 10;
             checkBoxReopenLastFolder.Text = "Reopen the last folder at startup";
             checkBoxReopenLastFolder.UseVisualStyleBackColor = true;
+            //
+            // labelComfydbgPath / textBoxComfydbgPath
+            //
+            labelComfydbgPath.AutoSize = true;
+            labelComfydbgPath.Location = new System.Drawing.Point(9, 335);
+            labelComfydbgPath.Name = "labelComfydbgPath";
+            labelComfydbgPath.Size = new System.Drawing.Size(200, 15);
+            labelComfydbgPath.Text = "comfydbg command (for \"Compare versions\")";
+            textBoxComfydbgPath.Location = new System.Drawing.Point(300, 332);
+            textBoxComfydbgPath.Name = "textBoxComfydbgPath";
+            textBoxComfydbgPath.Size = new System.Drawing.Size(300, 23);
+            textBoxComfydbgPath.TabIndex = 11;
             // 
             // comboBoxColorScheme
             // 
@@ -940,6 +956,8 @@ namespace BooruDatasetTagManager
         private System.Windows.Forms.ComboBox comboBoxEndOfFolder;
         private System.Windows.Forms.CheckBox checkBoxRememberFolders;
         private System.Windows.Forms.CheckBox checkBoxReopenLastFolder;
+        private System.Windows.Forms.Label labelComfydbgPath;
+        private System.Windows.Forms.TextBox textBoxComfydbgPath;
         private System.Windows.Forms.CheckBox checkBoxCacheImages;
         private System.Windows.Forms.CheckBox checkBoxIncludeSubfolders;
         private System.Windows.Forms.CheckBox checkBoxDazzleLayout;

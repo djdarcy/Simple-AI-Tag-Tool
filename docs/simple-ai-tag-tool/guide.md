@@ -36,15 +36,15 @@ This is best effort. Solid-state drives, NTFS journaling, backups and shadow cop
 Type the tags you are reviewing for into **Check for**, separated by commas. Put `-` in front of a tag you do **not** want:
 
 ```
-raymond-cole, beard, 1man, -watermark, -blurry
+sherlock-holmes, deerstalker, 1man, -watermark, -blurry
 ```
 
 On every image, both boxes are coloured straight away:
 
 | You wrote | The image's caption... | Check for box | Tags box |
 |---|---|---|---|
-| `beard` | has `beard` | green | `beard` green |
-| `beard` | lacks `beard` | red | — |
+| `deerstalker` | has `deerstalker` | green | `deerstalker` green |
+| `deerstalker` | lacks `deerstalker` | red | — |
 | `-watermark` | lacks `watermark` | green | — |
 | `-watermark` | has `watermark` | red | `watermark` red |
 
@@ -61,6 +61,23 @@ Click into the tags line and edit it like any text. Your edit is applied to the 
 
 Nothing is written to disk until you save (**Ctrl+S**, or File > Save all changes), as in the original program. When you select several images at once, the middle pane switches to the *Grid* tab, which edits the tags of all selected images together.
 
+## The image info pane
+
+Under the preview sits a pane with everything about the current image. Press **I** (when you are not typing), or use View > *Image info pane*, to show or hide it; its size and visibility are remembered.
+
+**Preview Info** lists the file's facts: name and folder; format and compression (for example `PNG - Deflate`); size in pixels with the aspect ratio (`768 x 1024 (3:4)`); print size in inches and centimetres from the file's DPI, or at an assumed 96 dpi when the file has none; colour depth; the number of unique colours (counted in the background; shown as "counting..." until done); the image's position in the dataset; how long the image took to load; created, modified and accessed times; file size; and attributes such as read-only or hidden. Right-click a row to copy its value, or everything. *Open in default app* and *Show in folder* do what they say.
+
+**Preview Extracted Info** shows what is embedded in the file:
+
+- **EXIF** and any other metadata directories, grouped.
+- **Prompt (embedded):** the single positive/negative prompt BooruDatasetTagManager's own reader finds (A1111, NovelAI, ComfyUI and others).
+- **Workflow:** for an image made with ComfyUI, the positive and negative prompt text of **every sampling stage**, in execution order, with the text fields each encoder used (for example `clip_l` and `t5xxl` for Flux) and the node they came from. A stage that repeats an earlier one says so. A side that could not be traced is marked *unresolved* with the reason, never guessed. This is the same resolver as [`comfydbg prompt`](https://github.com/djdarcy/comfydbg), ported into the program, so no external tool runs. Below it, **Version fingerprint** lists the ComfyUI frontend and backend versions and the custom-node packages the workflow recorded.
+- *Copy workflow JSON* and *Save workflow JSON...* hand you the raw embedded graph. *Compare versions with comfydbg* runs `comfydbg detect` on the file, if you have comfydbg installed, to compare the workflow's versions with what is installed in ComfyUI; the command can be set in Settings > UI.
+
+Everything here is read in the background, so moving between images never waits for it.
+
+**WebP and video files:** decoding WebP needs `win-x64\libwebp.dll` next to the program, which BooruDatasetTagManager's release zip includes but a build from source does not; video previews need ScreenLister's native DLL. When an image cannot be decoded, the pane still shows the file's facts and says why the preview is missing. Workflows embedded in WebP files are read either way.
+
 ## Keyboard shortcuts
 
 | Action | Default key | Works... |
@@ -68,6 +85,7 @@ Nothing is written to disk until you save (**Ctrl+S**, or File > Save all change
 | Next image | Space, or Right | when you are not typing in a text box |
 | Previous image | Backspace, or Left | when you are not typing in a text box |
 | First image / last image | Home / End | when you are not typing in a text box |
+| Show / hide the image info pane | I | when you are not typing in a text box |
 | Next image | Alt+Right | anywhere, also while typing |
 | Previous image | Alt+Left | anywhere, also while typing |
 | Next image | PageDown | inside the tags or Check for box |

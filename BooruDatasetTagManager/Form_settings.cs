@@ -55,6 +55,7 @@ namespace BooruDatasetTagManager
             comboBoxEndOfFolder.SelectedIndex = (int)Program.Settings.DazzleEndOfFolder;
             checkBoxRememberFolders.Checked = Program.Settings.DazzleRememberFolders;
             checkBoxReopenLastFolder.Checked = Program.Settings.DazzleReopenLastFolder;
+            textBoxComfydbgPath.Text = Program.Settings.DazzleComfydbgPath;
             numericUpDown3.Value = Program.Settings.GridViewRowHeight;
             label11.Text = Program.Settings.GridViewFont.ToString();
             gridFontSettings = Program.Settings.GridViewFont;
@@ -99,9 +100,20 @@ namespace BooruDatasetTagManager
             }
         }
 
+        /// <summary>Simple-AI-Tag-Tool: set when Save changed the subfolder option, so the main window reloads the dataset.</summary>
+        public bool SubfoldersChanged { get; private set; }
+
         private async void BtnSave_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(I18n.GetText("TipSaveSettings"));
+            // Simple-AI-Tag-Tool: upstream showed the "restart" notice for every save. Only the
+            // settings that really need a restart warn now; the subfolder option is applied by
+            // reloading the dataset instead.
+            bool restartNeeded = (string)comboBoxLanguage.SelectedItem != Program.Settings.Language
+                                 || checkBoxDazzleLayout.Checked != Program.Settings.DazzleLayout
+                                 || (int)numericUpDown1.Value != Program.Settings.PreviewSize;
+            SubfoldersChanged = checkBoxIncludeSubfolders.Checked != Program.Settings.IncludeSubfolders;
+            if (restartNeeded)
+                MessageBox.Show(I18n.GetText("TipSaveSettings"));
             Program.Settings.PreviewSize = (int)numericUpDown1.Value;
             Program.Settings.ShowAutocompleteAfterCharCount = (int)numericUpDown2.Value;
             Program.Settings.TranslationLanguage = (string)comboBox1.SelectedValue;
@@ -124,6 +136,7 @@ namespace BooruDatasetTagManager
             Program.Settings.DazzleEndOfFolder = (EndOfFolderAction)Math.Max(0, comboBoxEndOfFolder.SelectedIndex);
             Program.Settings.DazzleRememberFolders = checkBoxRememberFolders.Checked;
             Program.Settings.DazzleReopenLastFolder = checkBoxReopenLastFolder.Checked;
+            Program.Settings.DazzleComfydbgPath = string.IsNullOrWhiteSpace(textBoxComfydbgPath.Text) ? "comfydbg" : textBoxComfydbgPath.Text.Trim();
             if (!checkBoxRememberFolders.Checked)
                 Program.RecentFolders?.Clear(); // "don't remember" means forget what is already stored
             Program.Settings.GridViewRowHeight = (int)numericUpDown3.Value;

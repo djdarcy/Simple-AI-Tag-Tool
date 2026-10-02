@@ -4,6 +4,24 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.8.0] - 2026-10-01
+
+### Added
+
+- **Image info pane** under the preview (View > Image info pane, or the I key), with two tabs. *Preview Info*: file name and folder, format and compression, pixel size and aspect ratio, print size from DPI, colour depth, unique colours, position in the dataset, load time, created/modified/accessed times, file size and attributes; right-click to copy; buttons to open the file in its default app or show it in its folder. *Preview Extracted Info*: EXIF and other metadata, the embedded prompt, and for ComfyUI images the positive and negative prompts of every sampling stage plus the workflow's version fingerprint, with buttons to copy or save the raw workflow JSON and to run `comfydbg detect` for an installed-version comparison. Slow facts are read in the background and never hold up moving to the next image.
+- **Full prompt view and "Collapse repeats":** clicking a node in the Extracted tab shows its whole text in a read-only, selectable box, with "Send to Check for box" on its right-click menu. Collapse repeats (on by default) folds stages and sides that repeat an earlier one and merges fields holding the same text, like `comfydbg prompt --prune`.
+- **Native ComfyUI prompt resolver:** the per-stage prompt extraction from `comfydbg prompt`, ported into the program and checked against the Python original on 476 real outputs with no differences. It also reads workflows that BooruDatasetTagManager's own reader could not: every WebP output, and PNGs with damaged trailing chunks.
+
+### Changed
+
+- **Settings no longer claim a restart for every change.** The restart notice appears only when the language, the layout or the preview size changed; changing *Include subfolders* reloads the open dataset on the spot.
+- The README and guide examples use `sherlock-holmes` as the sample character.
+
+### Fixed
+
+- When an image cannot be decoded (a WebP without `libwebp.dll`, a video without ScreenLister), the info pane now describes that file instead of silently keeping the previous image's facts.
+- Print size no longer uses the screen's DPI for a file that has none; it trusts only a resolution stored in the file, and otherwise says "assumed 96 dpi".
+
 ## [2.7.0] - 2026-10-01
 
 The first Simple-AI-Tag-Tool release: a review layout for refining existing captions, on top of BooruDatasetTagManager 2.6.3.

@@ -191,6 +191,7 @@ namespace BooruDatasetTagManager
             gridViewDS.DataSource = Program.DataManager.GetDataSource();
             dazzleDatasetFolder = folder;
             RememberFolder(folder);
+            RenderInfoPane(); // the first image was shown while the list was still filling: its position row needs the final count
             isAllTags = true;
             toolStripLabelAllTags.Text = I18n.GetText("UILabelAllTags");
             gridViewAllTags.DataSource = Program.DataManager.AllTagsBindingSource;
@@ -297,9 +298,17 @@ namespace BooruDatasetTagManager
                 Process.Start(new ProcessStartInfo(imgPath) { UseShellExecute = true });
                 return;
             }
+            previewFromCache = Program.Settings.CacheOpenImages && Program.DataManager.IsImageCached(imgPath);
+            previewLoadWatch.Restart();
             Image img = Program.DataManager.GetImageFromFileWithCache(imgPath);
+            previewLoadWatch.Stop();
             if (img == null)
+            {
+                // could not decode (e.g. WebP without libwebp): keep the preview as it was, but the
+                // info pane must still describe THIS file, or it silently shows the previous image's facts
+                UpdateInfoPane(imgPath, null);
                 return;
+            }
             if (separateWindow || Program.Settings.PreviewType == ImagePreviewType.SeparateWindow)
             {
                 if (fPreview == null || fPreview.IsDisposed)
@@ -311,6 +320,7 @@ namespace BooruDatasetTagManager
                 if (!Program.Settings.CacheOpenImages)
                     pictureBoxPreview.Image?.Dispose();
                 pictureBoxPreview.Image = img;
+                UpdateInfoPane(imgPath, img);
             }
         }
 
@@ -320,6 +330,7 @@ namespace BooruDatasetTagManager
             if (!Program.Settings.CacheOpenImages)
                 pictureBoxPreview.Image?.Dispose();
             pictureBoxPreview.Image = null;
+            UpdateInfoPane(null, null);
         }
 
         private async void LoadSelectedImageToGrid()
@@ -1848,12 +1859,21 @@ namespace BooruDatasetTagManager
         {
             HidePreview();
             Form_settings settings = new Form_settings();
+            bool reloadDataset = false;
             if (settings.ShowDialog() == DialogResult.OK)
             {
                 SetStatus(I18n.GetText("TipSettingsSaved"));
+                reloadDataset = settings.SubfoldersChanged && !string.IsNullOrEmpty(dazzleDatasetFolder);
             }
             settings.Close();
             switchLanguage();
+            if (reloadDataset)
+            {
+                // the subfolder option applies at load time: reload the open folder so the
+                // dataset list matches the new setting (LoadFromFolderAsync asks about unsaved edits first)
+                BeginInvoke(new Action(async () => await LoadFromFolderAsync(false, dazzleDatasetFolder)));
+                return;
+            }
             if (isShowPreview)
             {
                 if (gridViewDS.SelectedRows.Count == 1)
@@ -2060,6 +2080,7 @@ namespace BooruDatasetTagManager
             MenuHideAllTags.Checked = IsPaneCollapsed(tabControl1);
             MenuHideTags.Checked = IsPaneCollapsed(TagsPane);
             MenuHideDataset.Checked = IsPaneCollapsed(toolStripContainer3);
+            if (menuInfoPane != null) menuInfoPane.Checked = !splitPreview.Panel2Collapsed;
         }
 
         private void HideShowAllTagsWindow()

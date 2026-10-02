@@ -83,6 +83,12 @@ namespace BooruDatasetTagManager
                 return Extensions.GetImageFromFile(path);
         }
 
+        /// <summary>Simple-AI-Tag-Tool: lets the info pane label a load time as "(cached)".</summary>
+        public bool IsImageCached(string path)
+        {
+            return imagesCache.ContainsKey(path);
+        }
+
         public void ClearCache()
         {
             imagesCache.Clear();

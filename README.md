@@ -19,12 +19,12 @@ When a caption is wrong, the cost shows up hours later in a training run. This t
 ## The review loop
 
 1. **Open a dataset folder.** Each image's caption is read from the `.txt` file with the same name.
-2. **Say what you are checking for.** Type tags into the *Check for* box, for example `raymond-cole, beard, -watermark`. A `-` means "this tag should not be here".
+2. **Say what you are checking for.** Type tags into the *Check for* box, for example `sherlock-holmes, deerstalker, -watermark`. A `-` means "this tag should not be here".
 3. **Step through the images.** Space for the next image, Backspace for the previous one. On every image, each tag you are checking for turns **green** when it is as expected and **red** when it is missing or unwanted, in the check list and in the caption itself.
 4. **Fix the caption in place.** The caption is a single editable line, exactly as the file holds it.
 5. **Save, change what you are checking for, and go round again.**
 
-## What it does today (2.7.0)
+## What it does today (2.8.0)
 
 - **Review layout:** image preview on the left, the check list and caption in the middle, the dataset list on the right.
 - **Captions as text:** each image's tags as one editable comma-separated line, with undo and redo. The original tag grid is one click away, and is used automatically when you select several images.
@@ -34,6 +34,7 @@ When a caption is wrong, the cost shows up hours later in a training run. This t
 - **Only this folder:** loading can include or skip subfolders.
 - **Recent folders:** the last five folders are listed in the File menu, the last one reopens at startup, and clearing the list overwrites the stored file before deleting it.
 - **Help menu:** the user guide, keyboard shortcuts, and links to this project and the original.
+- **Image info pane:** under the preview, the file's facts (size, aspect, print size, colours, dates, attributes, position in the dataset) and what is embedded in it: EXIF, the prompt, and for ComfyUI images the prompt of every sampling stage, resolved by the same logic as `comfydbg prompt`, built in. Click any prompt to see it whole and copy it, or send it straight to the check list.
 
 The [user guide](docs/simple-ai-tag-tool/guide.md) explains each of these, with the full shortcut list.
 
@@ -42,7 +43,8 @@ The [user guide](docs/simple-ai-tag-tool/guide.md) explains each of these, with 
 - **Conditional checks:** rules such as "a birth date in May means the `May` tag should be present", with a date or pattern deciding when a tag is required, and a tag flagged when its condition is not met.
 - **Templates:** a named set of tags (a character, a style, a setting) that can be added to a caption in one step, with its tags coloured present or missing on every image.
 - **A local AI refinement pass (LM Studio):** a "play" button that sends the image, its caption, your checks and a written instruction to a local vision model. Its proposed caption appears beside the current one as a diff, and you choose what to keep, change by change. Nothing is written until you accept it.
-- **Zoom, pan and selection in the preview**, IrfanView-style, with the image's size, depth, position in the folder, zoom, file size and date in the title and status bar.
+- **Zoom, pan and selection in the preview**, IrfanView-style, with the zoom level in the title bar.
+- **Per-image notes:** a place beside each caption for a prompt or a reminder, optionally checked against the same tag list as the caption.
 
 ## Getting started
 

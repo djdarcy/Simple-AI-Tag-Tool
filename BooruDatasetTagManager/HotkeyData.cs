@@ -93,6 +93,7 @@ namespace BooruDatasetTagManager
             Items.Add(new HotkeyItem("DazzleLeaveBox", "Leave the tags or check box", Keys.Escape, false, false, false));
             Items.Add(new HotkeyItem("DazzleFirstImage", "First image (when not typing)", Keys.Home, false, false, false));
             Items.Add(new HotkeyItem("DazzleLastImage", "Last image (when not typing)", Keys.End, false, false, false));
+            Items.Add(new HotkeyItem("DazzleInfoPane", "Show / hide the image info pane (when not typing)", Keys.I, false, false, false));
         }
 
         public void ChangeLanguage()

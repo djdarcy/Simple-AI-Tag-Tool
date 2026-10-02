@@ -63,6 +63,7 @@ namespace BooruDatasetTagManager
             splitContainer2.Panel2.Controls.Add(toolStripContainer3);
             BuildTagsTextPane();
             splitContainer2.Panel1.Controls.Add(splitMiddle);
+            BuildInfoPane();
             // A picture box cannot take focus, so clicking the preview used to leave
             // focus (and Space) in the tags box. Send it to the dataset list instead.
             pictureBoxPreview.MouseDown += (s, e) => gridViewDS.Focus();
@@ -82,6 +83,7 @@ namespace BooruDatasetTagManager
             splitContainer1.ResumeLayout();
             ResumeLayout();
             splitMiddle.SplitterDistance = Math.Max(80, splitMiddle.Height / 5);
+            PlaceInfoPaneSplitter();
         }
 
         private void BuildTagsTextPane()
@@ -641,7 +643,8 @@ namespace BooruDatasetTagManager
         private static bool IsTypingFocus()
         {
             Control focused = Control.FromChildHandle(GetFocus());
-            return focused is TextBoxBase || focused is ComboBox;
+            // a read-only box (the info pane's prompt view) is for selecting and copying, so Space still steps images
+            return (focused is TextBoxBase tb && !tb.ReadOnly) || focused is ComboBox;
         }
 
         /// <summary>
@@ -694,6 +697,13 @@ namespace BooruDatasetTagManager
                         break;
                     case "DazzlePrevImageInBox":
                         if (inTagsBox) step = -1;
+                        break;
+                    case "DazzleInfoPane":
+                        if (!typing)
+                        {
+                            ToggleInfoPane();
+                            return true;
+                        }
                         break;
                     case "DazzleLeaveBox":
                         if (inTagsBox)
