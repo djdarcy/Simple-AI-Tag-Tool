@@ -289,6 +289,140 @@ namespace BooruDatasetTagManager
             return 0;
         }
 
+        // -- chat with tools (Chat mode) -------------------------------------------------------------------
+
+        public sealed class ToolCall { public string Id; public string Name; public string Arguments = ""; }
+
+        public sealed class ChatResult
+        {
+            public bool Ok, Cancelled;
+            public string Error;
+            public string Content = "", Reasoning = "";
+            public List<ToolCall> ToolCalls = new List<ToolCall>();
+            public string FinishReason;
+            public int? PromptTokens, CompletionTokens, TotalTokens;
+            public TimeSpan Elapsed;
+        }
+
+        /// <summary>
+        /// One turn of a multi-message conversation with optional tools: streams content, reasoning and tool-call
+        /// fragments (assembled by index: id and name from the first fragment, arguments concatenated -- measured
+        /// 2026-10-02, tools/lmstudio-tools-probe.py), and reads the usage from the final event when the server sends it.
+        /// The caller owns the history: append AssistantMessage(result) and one ToolResultMessage per call, then call again.
+        /// </summary>
+        public async Task<ChatResult> ChatAsync(JArray messages, JArray tools, bool think, int maxTokens, float temperature, IProgress<Delta> progress, CancellationToken ct)
+        {
+            var res = new ChatResult();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var body = new JObject
+            {
+                ["model"] = DefaultModel ?? "", ["messages"] = messages, ["stream"] = true,
+                ["stream_options"] = new JObject { ["include_usage"] = true },
+                ["max_tokens"] = maxTokens, ["temperature"] = temperature,
+            };
+            if (tools != null && tools.Count > 0) { body["tools"] = tools; body["tool_choice"] = "auto"; }
+            if (!think) body["reasoning_effort"] = "none";
+            try
+            {
+                using var msg = new HttpRequestMessage(HttpMethod.Post, Endpoint + "/chat/completions") { Content = new StringContent(body.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json") };
+                using var resp = await http.SendAsync(msg, HttpCompletionOption.ResponseHeadersRead, ct);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    string detail = "";
+                    try { detail = (await resp.Content.ReadAsStringAsync(ct)).Trim(); if (detail.Length > 400) detail = detail.Substring(0, 400); } catch (Exception) { }
+                    res.Error = Endpoint + " answered HTTP " + (int)resp.StatusCode + (detail.Length > 0 ? ": " + detail : "");
+                    return res;
+                }
+                var sbContent = new StringBuilder(); var sbReasoning = new StringBuilder();
+                var calls = new SortedDictionary<int, ToolCall>();
+                using var stream = await resp.Content.ReadAsStreamAsync(ct);
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                string line;
+                while ((line = await reader.ReadLineAsync(ct)) != null)
+                {
+                    if (!line.StartsWith("data:")) continue;
+                    string payload = line.Substring(5).Trim();
+                    if (payload == "[DONE]") break;
+                    JObject obj;
+                    try { obj = JObject.Parse(payload); } catch (Exception) { continue; }
+                    if (obj["usage"] is JObject u)
+                    {
+                        res.PromptTokens = (int?)u["prompt_tokens"]; res.CompletionTokens = (int?)u["completion_tokens"]; res.TotalTokens = (int?)u["total_tokens"];
+                    }
+                    var choice = (obj["choices"] as JArray)?.FirstOrDefault() as JObject;
+                    if (choice == null) continue;
+                    var delta = choice["delta"] as JObject;
+                    if (delta != null)
+                    {
+                        string c = (string)delta["content"];
+                        string r = (string)delta["reasoning_content"] ?? (string)delta["reasoning"];
+                        if (!string.IsNullOrEmpty(r)) { sbReasoning.Append(r); progress?.Report(new Delta(DeltaKind.Reasoning, r)); }
+                        if (!string.IsNullOrEmpty(c)) { sbContent.Append(c); progress?.Report(new Delta(DeltaKind.Content, c)); }
+                        if (delta["tool_calls"] is JArray frags)
+                            foreach (var f in frags.OfType<JObject>())
+                            {
+                                int index = (int?)f["index"] ?? 0;
+                                if (!calls.TryGetValue(index, out var call)) { call = new ToolCall(); calls[index] = call; }
+                                if (f["id"] != null) call.Id = (string)f["id"];
+                                var fn = f["function"] as JObject;
+                                if (fn != null)
+                                {
+                                    if (fn["name"] != null && !string.IsNullOrEmpty((string)fn["name"])) call.Name = (string)fn["name"];
+                                    if (fn["arguments"] != null) call.Arguments += (string)fn["arguments"];
+                                }
+                            }
+                    }
+                    string finish = (string)choice["finish_reason"];
+                    if (finish != null) res.FinishReason = finish;
+                }
+                res.Content = sbContent.ToString(); res.Reasoning = sbReasoning.ToString();
+                res.ToolCalls = calls.Values.ToList();
+                // inline <think> fallback for a server without reasoning parsing
+                var m = Regex.Match(res.Content, @"<think>(.*?)(?:</think>|$)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                if (m.Success) { res.Reasoning += m.Groups[1].Value; res.Content = Regex.Replace(res.Content, @"<think>.*?(?:</think>|$)", "", RegexOptions.Singleline | RegexOptions.IgnoreCase); }
+                res.Content = res.Content.Trim();
+                if (res.Content.Length == 0 && res.ToolCalls.Count == 0 && res.FinishReason != "stop")
+                { res.Error = "the model answered with nothing" + (res.FinishReason == "length" ? " -- the reply hit max tokens (thinking counts); raise Max reply tokens or turn Think off" : ""); return res; }
+                res.Ok = true;
+            }
+            catch (OperationCanceledException) { res.Cancelled = true; res.Error = "stopped"; }
+            catch (HttpRequestException e) { res.Error = "cannot reach " + Endpoint + ": " + Short(e); }
+            catch (Exception e) { res.Error = Short(e); }
+            finally { res.Elapsed = sw.Elapsed; }
+            return res;
+        }
+
+        /// <summary>The assistant turn to append to the history: content and the tool calls as the server shaped them.</summary>
+        public static JObject AssistantMessage(ChatResult r)
+        {
+            var m = new JObject { ["role"] = "assistant", ["content"] = r.Content.Length > 0 ? (JToken)r.Content : JValue.CreateNull() };
+            if (r.ToolCalls.Count > 0)
+                m["tool_calls"] = new JArray(r.ToolCalls.Select(c => new JObject { ["id"] = c.Id, ["type"] = "function", ["function"] = new JObject { ["name"] = c.Name, ["arguments"] = c.Arguments } }));
+            return m;
+        }
+
+        public static JObject ToolResultMessage(string callId, string content) =>
+            new JObject { ["role"] = "tool", ["tool_call_id"] = callId, ["content"] = content };
+
+        /// <summary>A user turn: text, optionally with an image part.</summary>
+        public static JObject UserMessage(string text, byte[] imageBytes = null, string mime = "image/jpeg")
+        {
+            if (imageBytes == null) return new JObject { ["role"] = "user", ["content"] = text };
+            return new JObject
+            {
+                ["role"] = "user",
+                ["content"] = new JArray(new JObject { ["type"] = "text", ["text"] = text },
+                                         new JObject { ["type"] = "image_url", ["image_url"] = new JObject { ["url"] = "data:" + mime + ";base64," + Convert.ToBase64String(imageBytes) } })
+            };
+        }
+
+        /// <summary>A function tool definition in the OpenAI shape.</summary>
+        public static JObject Tool(string name, string description, JObject parameters) =>
+            new JObject { ["type"] = "function", ["function"] = new JObject { ["name"] = name, ["description"] = description, ["parameters"] = parameters } };
+
+        /// <summary>Set the model on a request body built by the caller; ChatAsync fills it from this when the body's model is empty.</summary>
+        public string DefaultModel { get; set; }
+
         // -- images ----------------------------------------------------------------------------------------
 
         /// <summary>

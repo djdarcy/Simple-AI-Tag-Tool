@@ -4,6 +4,19 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.13.0] - 2026-10-02
+
+### Added
+
+- **Chat: an assistant that acts.** A third mode of the middle pane. A conversation with the model about the current image in which it can set the caption, rename the file or move it, through five tools it is told about (`get_image`, `set_caption`, `rename_image`, `move_image`, `list_images`). A caption change goes into the caption box like a typed edit; a rename or move happens on disk at once with the caption file following, and the dataset list, title bar and info pane update. Every change is journaled with **Undo last change**. The Result panel shows the file, folder and caption as they stand and the last change; the transcript shows you, the model and its tool actions in three colours; a context meter shows the session's tokens against the model's loaded window, and the oldest turns are dropped above three quarters of it. The image is sent once per session and again when the current image changes. Toggles: Think, Tools (off = talk only), Ask before file changes.
+- **Chat skills** in `skills\chat` with placeholders `{caption}`, `{refined}`, `{file}`, `{folder}`, `{rules}`, `{checks}`, filled in when a session starts; two defaults: *Assistant* and *Name from template* (`<subject>__<scene>__<objects>` from the caption and Refine's proposal).
+- Multi-turn, tool-calling support in the LM Studio client (streamed tool-call fragments assembled, `role: tool` results, usage from `stream_options`).
+
+### Changed
+
+- The Refine strip's tooltips are wrapped blocks shown for 20 seconds instead of one long line that vanished.
+- The transcript renders the model's `**bold**` and `` `code` `` instead of showing the marks.
+
 ## [2.12.0] - 2026-10-02
 
 ### Added

@@ -77,6 +77,11 @@ namespace BooruDatasetTagManager
         public int DazzleRefineMaxTokens { get; set; } = 4096;        // the reply's budget; thinking counts against it
         public float DazzleRefineTemperature { get; set; } = 0.3f;
         public int DazzleRefineImageLongSide { get; set; } = 1024;    // images are downscaled to this before sending
+        public int DazzleMiddleMode { get; set; } = 0;                // 0 Review, 1 Refine, 2 Chat
+        public string DazzleChatSkill { get; set; } = "";
+        public bool DazzleChatAskFiles { get; set; } = false;
+        public bool DazzleChatTools { get; set; } = true;
+        public int DazzleChatInstructionHeight { get; set; } = 0;
 
         public bool LoadSettingsLoadPreviewImages { get; set; } = true;
         public bool LoadSettingsReadMetadata { get; set; } = false;
@@ -167,6 +172,11 @@ namespace BooruDatasetTagManager
                 DazzleRefineMaxTokens = tempSettings.DazzleRefineMaxTokens > 0 ? tempSettings.DazzleRefineMaxTokens : 4096;
                 DazzleRefineTemperature = tempSettings.DazzleRefineTemperature;
                 DazzleRefineImageLongSide = tempSettings.DazzleRefineImageLongSide > 0 ? tempSettings.DazzleRefineImageLongSide : 1024;
+                DazzleMiddleMode = tempSettings.DazzleMiddleMode;
+                DazzleChatSkill = tempSettings.DazzleChatSkill ?? "";
+                DazzleChatAskFiles = tempSettings.DazzleChatAskFiles;
+                DazzleChatTools = tempSettings.DazzleChatTools;
+                DazzleChatInstructionHeight = tempSettings.DazzleChatInstructionHeight;
                 LoadSettingsLoadPreviewImages = tempSettings.LoadSettingsLoadPreviewImages;
                 LoadSettingsReadMetadata = tempSettings.LoadSettingsReadMetadata;
                 if (!string.IsNullOrEmpty(tempSettings.ColorScheme))

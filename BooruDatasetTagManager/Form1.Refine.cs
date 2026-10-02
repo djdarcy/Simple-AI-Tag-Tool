@@ -76,24 +76,34 @@ namespace BooruDatasetTagManager
             modeStrip = new ToolStrip { Name = "modeStrip", GripStyle = ToolStripGripStyle.Hidden, Dock = DockStyle.Top };
             modeReview = new ToolStripButton("Review") { CheckOnClick = false, Checked = true, ToolTipText = "Rules and the Check for list" };
             modeRefine = new ToolStripButton("Refine") { CheckOnClick = false, ToolTipText = "Ask a local vision model (LM Studio) for a new caption and review it as a diff" };
-            modeReview.Click += (s, e) => SetMiddleMode(false);
-            modeRefine.Click += (s, e) => SetMiddleMode(true);
-            modeStrip.Items.AddRange(new ToolStripItem[] { modeReview, modeRefine });
+            modeChat = new ToolStripButton("Chat") { CheckOnClick = false, ToolTipText = "Talk with the model about the image; it can set the caption, rename or move the file through tools, every change undoable" };
+            modeReview.Click += (s, e) => SetMiddleMode(0);
+            modeRefine.Click += (s, e) => SetMiddleMode(1);
+            modeChat.Click += (s, e) => SetMiddleMode(2);
+            modeStrip.Items.AddRange(new ToolStripItem[] { modeReview, modeRefine, modeChat });
             modeStrip.MouseUp += (s, e) => gridViewDS.Focus();
             BuildRefinePane();
+            BuildChatPane();
+            panelMiddleTop.Controls.Add(panelChat);
             panelMiddleTop.Controls.Add(panelRefine);
             panelMiddleTop.Controls.Add(reviewPane);
             panelMiddleTop.Controls.Add(modeStrip);
-            SetMiddleMode(Program.Settings.DazzleRefineMode);
+            SetMiddleMode(Program.Settings.DazzleMiddleMode);
             return panelMiddleTop;
         }
 
-        private void SetMiddleMode(bool refine)
+        private ToolStripButton modeChat;
+
+        /// <summary>0 = Review (rules + Check for), 1 = Refine, 2 = Chat. Chat also swaps the bottom half (transcript for the caption box).</summary>
+        private void SetMiddleMode(int mode)
         {
-            modeReview.Checked = !refine; modeRefine.Checked = refine;
-            reviewPane.Visible = !refine; panelRefine.Visible = refine;
-            Program.Settings.DazzleRefineMode = refine;
-            if (refine) { LoadSkillsList(); RenderProposalForCurrentImage(); BeginInvoke(new Action(PlaceInstructionSplitter)); }
+            mode = Math.Max(0, Math.Min(2, mode));
+            modeReview.Checked = mode == 0; modeRefine.Checked = mode == 1; modeChat.Checked = mode == 2;
+            reviewPane.Visible = mode == 0; panelRefine.Visible = mode == 1;
+            ShowChatMode(mode == 2);
+            Program.Settings.DazzleMiddleMode = mode;
+            Program.Settings.DazzleRefineMode = mode == 1;
+            if (mode == 1) { LoadSkillsList(); RenderProposalForCurrentImage(); BeginInvoke(new Action(PlaceInstructionSplitter)); }
         }
 
         private void BuildRefinePane()
@@ -104,7 +114,9 @@ namespace BooruDatasetTagManager
             comboSkills.SelectedIndexChanged += SkillsSelectionChanged;
             buttonSaveSkill = new ToolStripButton("Save as...") { ToolTipText = "Save the instruction text as a new skill file" };
             buttonSaveSkill.Click += (s, e) => SaveSkillAs();
-            strip.ShowItemToolTips = true;
+            // the strip's own tips are one long line that hides after a few seconds (user, 2026-10-02): a wrapped block
+            // shown for 20 s instead, attached per item below once the items exist
+            strip.ShowItemToolTips = false;
             // Play and Stop as the glyphs everyone knows, drawn here so they follow the DPI and need no resource file (user, 2026-10-02)
             buttonPlay = new ToolStripButton { Name = "buttonPlay", Text = "Play", Image = PlayGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, ToolTipText = "Play: send the image, the instruction and the current caption to the model" };
             buttonPlay.Click += async (s, e) => await RunRefineAsync();
@@ -121,6 +133,7 @@ namespace BooruDatasetTagManager
             var buttonHelp = new ToolStripButton { Name = "buttonRefineHelp", Text = "Help", Image = HelpGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, Alignment = ToolStripItemAlignment.Right, ToolTipText = "Help: the Refine section of the user guide (opens in your browser)" };
             buttonHelp.Click += (s, e) => OpenUrl(GuideUrl + "#refine-a-local-ai-pass");
             strip.Items.AddRange(new ToolStripItem[] { new ToolStripLabel("Skill:"), comboSkills, buttonSaveSkill, new ToolStripSeparator(), buttonPlay, buttonStop, new ToolStripSeparator(), checkThink, checkSendRules, checkSchema, new ToolStripSeparator(), buttonLogs, buttonHelp });
+            foreach (ToolStripItem it in strip.Items) if (!string.IsNullOrEmpty(it.ToolTipText)) AttachBlockTip(strip, it, it.ToolTipText);
 
             var gridFont = Program.Settings.GridViewFont.GetFont();
             // sizes follow the font, not pixel constants: at 144 dpi a 64-px box showed two lines of a five-line skill (user, 2026-10-02)
@@ -214,6 +227,34 @@ namespace BooruDatasetTagManager
             placingInstructionSplit = true;
             try { splitInstruction.SplitterDistance = want; } catch (Exception) { }
             finally { placingInstructionSplit = false; }
+        }
+
+        private ToolTip blockTip;
+
+        /// <summary>A tooltip for a strip item as a wrapped block (about 60 characters a line), shown for 20 seconds.</summary>
+        private void AttachBlockTip(ToolStrip strip, ToolStripItem item, string text)
+        {
+            blockTip ??= new ToolTip { InitialDelay = 500, AutoPopDelay = 20000, ReshowDelay = 200, ShowAlways = true };
+            string wrapped = WrapText(text, 60);
+            item.ToolTipText = null;
+            item.MouseEnter += (s, e) =>
+            {
+                var r = item.Bounds;
+                blockTip.Show(wrapped, strip, r.Left, r.Bottom + 4, 20000);
+            };
+            item.MouseLeave += (s, e) => blockTip.Hide(strip);
+        }
+
+        private static string WrapText(string text, int width)
+        {
+            var sb = new StringBuilder(); int col = 0;
+            foreach (var word in text.Split(' '))
+            {
+                if (col > 0 && col + 1 + word.Length > width) { sb.Append('\n'); col = 0; }
+                else if (col > 0) { sb.Append(' '); col++; }
+                sb.Append(word); col += word.Length;
+            }
+            return sb.ToString();
         }
 
         /// <summary>A green right-pointing triangle, sized for this screen's DPI.</summary>

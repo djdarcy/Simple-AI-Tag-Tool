@@ -88,6 +88,18 @@ The top of the middle pane has two modes: **Review** (the rules and the Check fo
 
 Accepting only writes to the caption box, as if you had typed it; nothing reaches the file until you save (Ctrl+S). The proposal is kept per image while the folder is open, so you can move on and come back. **Logs** opens a window with every run's request, the model's reasoning, the reply and any error, with Copy.
 
+## Chat: an assistant that acts
+
+The third mode of the middle pane. Where Refine proposes a caption for you to accept, Chat is a conversation with the model about the current image in which it can *do* things: set the caption, rename the file, move it to a folder. It sees the image, and it knows what Review and Refine produced.
+
+**The pane:** the skill (the system instruction; two are written on first use, *Assistant* and *Name from template*), a **Result** panel showing the file name, folder and caption as they stand, the last change the model made with an **Undo last change** button, and a context meter; below, the transcript (you in blue, the model in green, tool actions in grey) and an input line. Enter sends; Shift+Enter is a new line. **New session** starts the conversation again with the instruction as it is now.
+
+**What the model can change** -- its five tools, which it is told about: `get_image` (name, folder, caption, the latest Refine proposal, the folder's rules, the Check for list), `set_caption`, `rename_image`, `move_image` (inside the dataset folder only; the folder is created if needed), `list_images`. A caption change goes into the caption box like a typed edit and is saved with Ctrl+S; a rename or move happens on disk at once, the caption file moving with the image, and the dataset list, title bar and info pane follow. Every change is journaled; **Undo last change** reverses the most recent one, as many times as there are changes. Turn **Tools** off to make the model talk only; turn **Ask before file changes** on to be asked before each rename or move.
+
+**Skills can use placeholders** filled in when a session starts: `{caption}`, `{refined}` (Refine's latest proposal), `{file}`, `{folder}`, `{rules}`, `{checks}`. That is how the three modes chain: review the tags, refine them from the image, then a skill such as *Name from template* (`<subject>__<scene>__<objects>`) builds the file name from both.
+
+**The window:** the meter shows the session's tokens against the model's loaded context. Above three quarters, the oldest turns are dropped (the instruction is kept) and the transcript says so. The image is sent once per session and again when you move to another image.
+
 ## Editing tags
 
 Click into the tags line and edit it like any text. Your edit is applied to the image when you:
