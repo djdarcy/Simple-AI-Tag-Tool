@@ -476,6 +476,14 @@ namespace BooruDatasetTagManager
             var firstPositive = FindFirstPositivePart(treeExtracted.Nodes);
             treeExtracted.SelectedNode = firstPositive;
             ShowDetail(firstPositive);
+            // An image with a workflow, a prompt, or descriptive metadata (EXIF, XMP, IPTC) opens on the Extracted tab so
+            // what it carries is in view at once; structural chunks every file has (PNG-IHDR, ICC) do not count. (user, 2026-10-02)
+            if (info != null && info.ExtractedNote != "reading...")
+            {
+                bool useful = haveWorkflow || !string.IsNullOrEmpty(info.EmbeddedPrompt)
+                    || info.Extracted.Any(r => r.Group == "EXIF" || r.Group == "Generation" || r.Group == "XMP" || r.Group == "IPTC");
+                tabsInfo.SelectedTab = tabsInfo.TabPages[useful ? "tabPreviewExtracted" : "tabPreviewInfo"];
+            }
             buttonCopyWorkflow.Enabled = buttonSaveWorkflow.Enabled = info?.EmbeddedWorkflowJson != null;
             buttonFingerprint.Enabled = haveWorkflow && info != null && !info.FileMissing;
         }
@@ -485,7 +493,7 @@ namespace BooruDatasetTagManager
         /// earlier one is one line, a side equal to an earlier side is one line, and fields of one
         /// side that hold the same text (Flux clip_l + t5xxl) are one node labelled with both fields.
         /// </summary>
-        /// <summary>The first text part under the first stage's POSITIVE side, or null.</summary>
+        /// <summary>The first text part under the first stage's POSITIVE side; failing that, the embedded positive prompt; else null.</summary>
         private static TreeNode FindFirstPositivePart(TreeNodeCollection nodes)
         {
             foreach (TreeNode n in nodes)
@@ -496,6 +504,11 @@ namespace BooruDatasetTagManager
                             if (side.Text.StartsWith("POSITIVE") && side.Nodes.Count > 0)
                                 return side.Nodes[0];
             }
+            foreach (TreeNode n in nodes)
+                if (n.Text == "Prompt (embedded)")
+                    foreach (TreeNode part in n.Nodes)
+                        if (part.Text.StartsWith("positive:"))
+                            return part;
             return null;
         }
 

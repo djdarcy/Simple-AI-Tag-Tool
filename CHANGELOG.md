@@ -4,6 +4,16 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.11.1] - 2026-10-02
+
+### Changed
+
+- The info pane opens on **Preview Extracted Info** for an image that carries a ComfyUI workflow, an embedded prompt, or descriptive metadata (EXIF, XMP, IPTC), with the first positive prompt already shown in the detail box; an image with none of these opens on Preview Info. (Structural chunks every file has, such as PNG-IHDR or an ICC profile, do not count.)
+
+### Fixed
+
+- "Prompt (embedded)" no longer shows the image's own caption file: BooruDatasetTagManager's metadata reader falls back to the sidecar `.txt` when an image has no embedded parameters, so every captioned image appeared to carry a prompt. That text is the caption, and is now left out.
+
 ## [2.11.0] - 2026-10-02
 
 ### Added

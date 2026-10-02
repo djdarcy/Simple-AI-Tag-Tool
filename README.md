@@ -24,7 +24,7 @@ When a caption is wrong, the cost shows up hours later in a training run. This t
 4. **Fix the caption in place.** The caption is a single editable line, exactly as the file holds it.
 5. **Save, change what you are checking for, and go round again.**
 
-## What it does today (2.11.0)
+## What it does today (2.11.1)
 
 - **Review layout:** image preview on the left, the check list and caption in the middle, the dataset list on the right.
 - **Captions as text:** each image's tags as one editable comma-separated line, with undo and redo. The original tag grid is one click away, and is used automatically when you select several images.

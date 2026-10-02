@@ -28,6 +28,19 @@ namespace BooruDatasetTagManager
 
         private static readonly string[] SkipDirectories = { "File Type", "File", "Huffman", "JpegComment" };
 
+        /// <summary>True when the prompt text is (or is contained in) the image's sidecar caption file.</summary>
+        private static bool PromptIsTheCaption(string imagePath, string prompt)
+        {
+            try
+            {
+                string sidecar = Path.ChangeExtension(imagePath, ".txt");
+                if (!File.Exists(sidecar)) return false;
+                string caption = File.ReadAllText(sidecar).Trim();
+                return caption.Length > 0 && caption.Contains(prompt.Trim());
+            }
+            catch (Exception) { return false; }
+        }
+
         public static Result Read(string path)
         {
             var r = new Result();
@@ -114,6 +127,13 @@ namespace BooruDatasetTagManager
                     // the scanner's fallbacks (stealth-PNG alpha, a sidecar .txt) can yield whitespace: that is no prompt
                     r.Prompt = string.IsNullOrWhiteSpace(fp.Prompt) ? null : fp.Prompt.Trim();
                     r.NegativePrompt = string.IsNullOrWhiteSpace(fp.NegativePrompt) ? null : fp.NegativePrompt.Trim();
+                    // The scanner's last resort is the sidecar .txt (Metadata.cs "Check if there is a .TXT metadata file"),
+                    // which in a dataset is the caption itself: that is not an embedded prompt, so it is dropped here.
+                    if (r.Prompt != null && PromptIsTheCaption(path, r.Prompt))
+                    {
+                        r.Prompt = null;
+                        r.NegativePrompt = null;
+                    }
                     // fp.Workflow is the API-format "prompt" chunk, despite its name (Metadata.cs ReadComfyUIParameters)
                     r.PromptGraphJson = r.PromptGraphJson ?? (string.IsNullOrEmpty(fp.Workflow) ? null : fp.Workflow);
                     void Add(string k, object v) { if (v != null && v.ToString().Length > 0 && v.ToString() != "0") r.Rows.Add(("Generation", k, v.ToString())); }
