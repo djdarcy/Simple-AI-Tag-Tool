@@ -78,6 +78,8 @@ namespace BooruDatasetTagManager
             checkBoxCacheImages = new System.Windows.Forms.CheckBox();
             checkBoxIncludeSubfolders = new System.Windows.Forms.CheckBox();
             checkBoxDazzleLayout = new System.Windows.Forms.CheckBox();
+            labelTagMatch = new System.Windows.Forms.Label();
+            comboBoxTagMatch = new System.Windows.Forms.ComboBox();
             labelPreviewLocation = new System.Windows.Forms.Label();
             labelColorScheme = new System.Windows.Forms.Label();
             comboBoxPreviewType = new System.Windows.Forms.ComboBox();
@@ -213,6 +215,19 @@ namespace BooruDatasetTagManager
             checkBoxDazzleLayout.TabIndex = 12;
             checkBoxDazzleLayout.Text = "Preview | Tags | Dataset layout (needs restart)";
             checkBoxDazzleLayout.UseVisualStyleBackColor = true;
+            //
+            // labelTagMatch / comboBoxTagMatch
+            //
+            labelTagMatch.AutoSize = true;
+            labelTagMatch.Location = new System.Drawing.Point(15, 388);
+            labelTagMatch.Name = "labelTagMatch";
+            labelTagMatch.Text = "Tag matching (Check for and rules)";
+            comboBoxTagMatch.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            comboBoxTagMatch.Items.AddRange(new object[] { "Strict: a term must equal a whole tag", "Lazy: a term may be a word or phrase inside a tag" });
+            comboBoxTagMatch.Location = new System.Drawing.Point(222, 385);
+            comboBoxTagMatch.Name = "comboBoxTagMatch";
+            comboBoxTagMatch.Size = new System.Drawing.Size(330, 23);
+            comboBoxTagMatch.TabIndex = 13;
             // 
             // CheckAskChange
             // 
@@ -524,6 +539,8 @@ namespace BooruDatasetTagManager
             tabGeneral.Controls.Add(AutoSortCheckBox);
             tabGeneral.Controls.Add(checkBoxIncludeSubfolders);
             tabGeneral.Controls.Add(checkBoxDazzleLayout);
+            tabGeneral.Controls.Add(labelTagMatch);
+            tabGeneral.Controls.Add(comboBoxTagMatch);
             tabGeneral.Controls.Add(LabelPreviewImageSize);
             tabGeneral.Controls.Add(CheckAskChange);
             tabGeneral.Controls.Add(numericUpDown1);
@@ -961,6 +978,8 @@ namespace BooruDatasetTagManager
         private System.Windows.Forms.CheckBox checkBoxCacheImages;
         private System.Windows.Forms.CheckBox checkBoxIncludeSubfolders;
         private System.Windows.Forms.CheckBox checkBoxDazzleLayout;
+        private System.Windows.Forms.Label labelTagMatch;
+        private System.Windows.Forms.ComboBox comboBoxTagMatch;
         private Manina.Windows.Forms.Tab tabInterrogator;
         private System.Windows.Forms.TextBox textBoxAiApiEndpoint;
         private System.Windows.Forms.Label LabelApApiEndpoint;

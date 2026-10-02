@@ -65,6 +65,9 @@ namespace BooruDatasetTagManager
         public bool DazzleInfoPaneVisible { get; set; } = true;
         public int DazzleInfoPaneHeight { get; set; } = 0;   // 0 = default split
         public string DazzleComfydbgPath { get; set; } = "comfydbg";
+        public DazzleRules.TagMatch DazzleTagMatch { get; set; } = DazzleRules.TagMatch.Strict;
+        public int DazzleBrowseWidth { get; set; } = 0;    // Browse folders dialog size; 0 = default
+        public int DazzleBrowseHeight { get; set; } = 0;
 
         public bool LoadSettingsLoadPreviewImages { get; set; } = true;
         public bool LoadSettingsReadMetadata { get; set; } = false;
@@ -143,6 +146,9 @@ namespace BooruDatasetTagManager
                 DazzleInfoPaneVisible = tempSettings.DazzleInfoPaneVisible;
                 DazzleInfoPaneHeight = tempSettings.DazzleInfoPaneHeight;
                 DazzleComfydbgPath = string.IsNullOrWhiteSpace(tempSettings.DazzleComfydbgPath) ? "comfydbg" : tempSettings.DazzleComfydbgPath;
+                DazzleTagMatch = tempSettings.DazzleTagMatch;
+                DazzleBrowseWidth = tempSettings.DazzleBrowseWidth;
+                DazzleBrowseHeight = tempSettings.DazzleBrowseHeight;
                 LoadSettingsLoadPreviewImages = tempSettings.LoadSettingsLoadPreviewImages;
                 LoadSettingsReadMetadata = tempSettings.LoadSettingsReadMetadata;
                 if (!string.IsNullOrEmpty(tempSettings.ColorScheme))

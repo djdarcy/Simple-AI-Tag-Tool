@@ -24,10 +24,11 @@ When a caption is wrong, the cost shows up hours later in a training run. This t
 4. **Fix the caption in place.** The caption is a single editable line, exactly as the file holds it.
 5. **Save, change what you are checking for, and go round again.**
 
-## What it does today (2.9.0)
+## What it does today (2.10.0)
 
 - **Review layout:** image preview on the left, the check list and caption in the middle, the dataset list on the right.
 - **Captions as text:** each image's tags as one editable comma-separated line, with undo and redo. The original tag grid is one click away, and is used automatically when you select several images.
+- **Rules:** "if this tag, then that tag", one row each: `sherlock-holmes` => `deerstalker, -modern clothes`, with `!` `&` `|` and `~"regex"` in the condition. Each image shows what each rule found; rules travel with the dataset in `satt-rules.json`. A character's standard tags are a rule, applied with one right-click.
 - **Check for:** wanted and unwanted tags, coloured green or red on every image as it loads. Matching ignores upper/lower case, `_` versus space, and weights. The list is remembered between sessions.
 - **IrfanView-style navigation:** Space / Backspace / arrow keys, and Home / End for the first and last image, whenever you are not typing. All the keys can be changed in Settings > Hotkeys.
 - **Start and end of the folder:** loop round, stop, or (like IrfanView) be offered the current folder, its parent and its subfolders to continue in.
@@ -41,8 +42,7 @@ The [user guide](docs/simple-ai-tag-tool/guide.md) explains each of these, with 
 
 ## Where it is going
 
-- **Conditional checks:** rules such as "a birth date in May means the `May` tag should be present", with a date or pattern deciding when a tag is required, and a tag flagged when its condition is not met.
-- **Templates:** a named set of tags (a character, a style, a setting) that can be added to a caption in one step, with its tags coloured present or missing on every image.
+- **Global conditional rules** (a second tab beside the folder's), and rules inherited from parent folders.
 - **A local AI refinement pass (LM Studio):** a "play" button that sends the image, its caption, your checks and a written instruction to a local vision model. Its proposed caption appears beside the current one as a diff, and you choose what to keep, change by change. Nothing is written until you accept it.
 - **Per-image notes:** a place beside each caption for a prompt or a reminder, optionally checked against the same tag list as the caption.
 

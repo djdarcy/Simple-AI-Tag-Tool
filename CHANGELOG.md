@@ -4,6 +4,20 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.10.0] - 2026-10-02
+
+### Added
+
+- **Rules pane** above the Check for box: one row per rule, `If` condition and `Then` tags, with a live Result (ok / missing / should not be here / dormant / conflict / error). Conditions use `!` `&` `|`, parentheses, quotes and `~"regex"`. Rules are saved per dataset folder in `satt-rules.json`, one `condition => tags` line per row, verbatim, so the file can be hand-edited. Right-click a rule to add its missing tags to the caption.
+- **Tag matching setting** (Settings > General): Strict (a term equals a whole tag, the default and the previous behaviour) or Lazy (a term may be a word or phrase inside a tag).
+- The Browse folders dialog can be resized; its size is remembered.
+- The Extracted tab opens on the first stage's POSITIVE prompt.
+
+### Changed
+
+- **Show in folder** opens the folder with the shell's folder handler (a replacement lister such as Directory Opus, when installed); "Open in Explorer with the file selected" is on the button's right-click.
+- Clicking in the info pane's tree or list hands the keyboard back to the dataset list, so the arrow keys keep navigating images.
+
 ## [2.9.0] - 2026-10-02
 
 ### Added

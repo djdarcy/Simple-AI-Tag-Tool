@@ -34,13 +34,16 @@ namespace BooruDatasetTagManager
         public Form_DazzleNextFolder(string currentFolder, bool atStart = false)
         {
             Text = "Browse folders";
-            FormBorderStyle = FormBorderStyle.FixedDialog;
+            FormBorderStyle = FormBorderStyle.Sizable;   // resizable; the size is remembered
             MaximizeBox = false;
             MinimizeBox = false;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(560, 380);
+            MinimumSize = new Size(420, 300);
+            ClientSize = Program.Settings.DazzleBrowseWidth > 0 && Program.Settings.DazzleBrowseHeight > 0
+                ? new Size(Program.Settings.DazzleBrowseWidth, Program.Settings.DazzleBrowseHeight) : new Size(560, 380);
+            FormClosing += (s, e) => { Program.Settings.DazzleBrowseWidth = ClientSize.Width; Program.Settings.DazzleBrowseHeight = ClientSize.Height; };
 
             var labelTop = new Label
             {
@@ -49,7 +52,7 @@ namespace BooruDatasetTagManager
                 Location = new Point(10, 10)
             };
             var labelIn = new Label { Text = "You are in folder:", AutoSize = true, Location = new Point(10, 36) };
-            textBoxFolder = new TextBox { ReadOnly = true, Location = new Point(10, 54), Width = 540, TabStop = false };
+            textBoxFolder = new TextBox { ReadOnly = true, Location = new Point(10, 54), Width = ClientSize.Width - 20, TabStop = false, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
 
             listFolders = new ListView
             {
@@ -59,21 +62,23 @@ namespace BooruDatasetTagManager
                 MultiSelect = false,
                 HeaderStyle = ColumnHeaderStyle.Nonclickable,
                 Location = new Point(10, 86),
-                Size = new Size(430, 250)
+                Size = new Size(ClientSize.Width - 130, ClientSize.Height - 130),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
             listFolders.Columns.Add("Select folder:", 320);
             listFolders.Columns.Add("Images", 80, HorizontalAlignment.Right);
             listFolders.KeyDown += ListFolders_KeyDown;
             listFolders.DoubleClick += (s, e) => UseSelected();
 
-            var buttonUse = new Button { Text = "Use folder", Location = new Point(450, 86), Size = new Size(100, 28) };
+            var buttonUse = new Button { Text = "Use folder", Location = new Point(ClientSize.Width - 110, 86), Size = new Size(100, 28), Anchor = AnchorStyles.Top | AnchorStyles.Right };
             buttonUse.Click += (s, e) => UseSelected();
-            var buttonCancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(450, 120), Size = new Size(100, 28) };
+            var buttonCancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(ClientSize.Width - 110, 120), Size = new Size(100, 28), Anchor = AnchorStyles.Top | AnchorStyles.Right };
             var labelKeys = new Label
             {
                 Text = "Space / Right / Backspace / Enter = use folder     Up / Down = choose     Left = go up a folder level",
                 AutoSize = true,
-                Location = new Point(10, 346)
+                Location = new Point(10, ClientSize.Height - 34),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
             };
 
             Controls.AddRange(new Control[] { labelTop, labelIn, textBoxFolder, listFolders, buttonUse, buttonCancel, labelKeys });

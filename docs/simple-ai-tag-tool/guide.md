@@ -50,6 +50,27 @@ On every image, both boxes are coloured straight away:
 
 Matching ignores upper/lower case, treats `_` and space as the same (`long_hair` = `long hair`), and ignores weights (`(beard:1.2)` = `beard`). The Check for list is remembered between sessions.
 
+## Rules: "if this tag, then that tag"
+
+Above the Check for box is the **Rules** pane: one row per rule, with an **If** condition, a **Then** list of tags, and a read-only **Result**.
+
+| If | Then | Meaning |
+|---|---|---|
+| `sherlock-holmes` | `deerstalker, pipe` | when the character is tagged, these should be too |
+| `sherlock-holmes` | `-modern clothes` | ...and this should not be |
+| `!sherlock-holmes` | `-deerstalker` | when the character is absent, the hat should be absent too |
+| `(1girl \| 1boy) & !solo` | `duo` | a condition can combine tags |
+| `~"\d+/\d+/\d{4}"` | `has date` | `~"..."` matches a regular expression against any tag |
+| *(empty)* | `beard, -watermark` | no condition: always checked, the same as the Check for box |
+
+The condition language is small: `!` (not), `&` (and), `|` (or), parentheses, double quotes around a tag that contains spaces or those characters, and `~"regex"`. The words `and`, `or`, `not` work too. A tilde is only a regex when the quote follows it directly; `~mytag` is just a tag.
+
+On every image, the Result column says what the rule found: **ok**, **dormant** (the condition is false, so the rule says nothing here, shown grey), what is **missing** or **should not be here** (red), or **conflict** (orange) when one rule requires a tag another forbids. A row whose condition does not parse shows the error in red and keeps your text. The tags a rule wants or forbids are coloured in the caption exactly like the Check for entries. Right-click a row for **Add missing tags to caption**, which appends the rule's missing tags in one step; that is how a character's standard tag set is applied.
+
+Rules belong to the dataset: they are saved as `satt-rules.json` in the folder, one `condition => tags` line per row, written when you move to another image, change folder or close. You can edit that file in Notepad; the grid shows whatever it holds. A folder with no rules has no file.
+
+**Tag matching** (Settings > General) applies to the Check for box, the rules and the colouring: **Strict** means a term must equal a whole comma-separated tag; **Lazy** means it may appear as a word or phrase inside a tag, so `beard` matches `raymond-cole beard` and `hair` matches `long hair` but not `hairy`.
+
 ## Editing tags
 
 Click into the tags line and edit it like any text. Your edit is applied to the image when you:

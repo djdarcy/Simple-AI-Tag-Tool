@@ -139,6 +139,7 @@ namespace BooruDatasetTagManager
         private async Task LoadFromFolderAsync(bool useAdditionalSettings, string folder = null)
         {
             CommitTagsTextBox();
+            CommitRules();
             if (Program.DataManager != null && Program.DataManager.IsDataSetChanged())
             {
                 DialogResult result = MessageBox.Show(I18n.GetText("TipDSChangeSaveText"), I18n.GetText("TipDSChangeSaveTitle"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
@@ -191,6 +192,7 @@ namespace BooruDatasetTagManager
             gridViewDS.DataSource = Program.DataManager.GetDataSource();
             dazzleDatasetFolder = folder;
             RememberFolder(folder);
+            LoadFolderRules(folder);
             RenderInfoPane(); // the first image was shown while the list was still filling: its position row needs the final count
             isAllTags = true;
             toolStripLabelAllTags.Text = I18n.GetText("UILabelAllTags");
@@ -338,6 +340,7 @@ namespace BooruDatasetTagManager
         private async void LoadSelectedImageToGrid()
         {
             CommitTagsTextBox();
+            CommitRules();
             gridViewTags.AutoGenerateColumns = false;
             if (gridViewDS.SelectedRows.Count == 0)
             {
@@ -664,6 +667,7 @@ namespace BooruDatasetTagManager
                 return;
             }
             CommitTagsTextBox();
+            CommitRules();
             Program.DataManager.SaveAll();
             Program.DataManager.UpdateDatasetHash();
             SetStatus(I18n.GetText("StatusSaved"));
@@ -1101,6 +1105,7 @@ namespace BooruDatasetTagManager
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             CommitTagsTextBox();
+            CommitRules();
             SaveDazzleState();
             if (Program.DataManager != null && Program.DataManager.IsDataSetChanged())
             {
@@ -2018,6 +2023,7 @@ namespace BooruDatasetTagManager
                     if (IsTextEditingChord(keyData))
                         return base.ProcessCmdKey(ref msg, keyData);
                     CommitTagsTextBox();
+            CommitRules();
                 }
                 Program.Settings.Hotkeys.Commands[hotkey.Id]();
                 return true;

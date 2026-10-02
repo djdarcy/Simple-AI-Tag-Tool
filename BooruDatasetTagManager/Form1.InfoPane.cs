@@ -44,6 +44,7 @@ namespace BooruDatasetTagManager
             splitPreview.Panel1.Controls.Add(pictureBoxPreview);
             imageView = new DazzleImageView { Name = "imageView", Dock = DockStyle.Fill };
             imageView.MouseDown += (s, e) => gridViewDS.Focus();   // a click here returns the keyboard to navigation
+            imageView.MouseUp += (s, e) => { if (!gridViewDS.Focused) gridViewDS.Focus(); };
             imageView.ViewChanged += (s, e) => OnViewChanged();
             splitPreview.Panel1.Controls.Add(imageView);
             tabPreview.Controls.Add(splitPreview);
@@ -56,6 +57,7 @@ namespace BooruDatasetTagManager
             listInfo.Columns.Add("Property", 150);
             listInfo.Columns.Add("Value", 600);
             listInfo.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) gridViewDS.Focus(); };
+            listInfo.GotFocus += (s, e) => BeginInvoke(new Action(() => { if (listInfo.Focused) gridViewDS.Focus(); }));
             listInfo.ContextMenuStrip = BuildCopyMenu(() => listInfo.SelectedItems.Count > 0 ? listInfo.SelectedItems[0].SubItems[1].Text : null,
                                                       () => string.Join(Environment.NewLine, listInfo.Items.Cast<ListViewItem>().Select(i => i.Text + ": " + i.SubItems[1].Text)));
             listInfo.Resize += (s, e) => { if (listInfo.Columns.Count == 2) listInfo.Columns[1].Width = Math.Max(200, listInfo.ClientSize.Width - listInfo.Columns[0].Width - 4); };
@@ -64,7 +66,11 @@ namespace BooruDatasetTagManager
             buttonOpenFile = new Button { Text = "Open in default app", AutoSize = true, TabStop = false };
             buttonOpenFile.Click += (s, e) => OpenWithShell(currentInfo?.Path);
             buttonOpenFolder = new Button { Text = "Show in folder", AutoSize = true, TabStop = false };
-            buttonOpenFolder.Click += (s, e) => { if (currentInfo != null && File.Exists(currentInfo.Path)) Process.Start("explorer.exe", "/select,\"" + currentInfo.Path + "\""); };
+            // the shell's folder handler, so a replacement lister such as Directory Opus opens it; Explorer-with-the-file-selected is on the right-click
+            buttonOpenFolder.Click += (s, e) => { if (currentInfo != null) OpenWithShell(currentInfo.Folder); };
+            var folderMenu = new ContextMenuStrip();
+            folderMenu.Items.Add("Open in Explorer with the file selected", null, (s, e) => { if (currentInfo != null && File.Exists(currentInfo.Path)) Process.Start("explorer.exe", "/select,\"" + currentInfo.Path + "\""); });
+            buttonOpenFolder.ContextMenuStrip = folderMenu;
             infoButtons.Controls.AddRange(new Control[] { buttonOpenFile, buttonOpenFolder });
 
             var tabInfo = new TabPage("Preview Info") { Name = "tabPreviewInfo" };
@@ -75,7 +81,10 @@ namespace BooruDatasetTagManager
             treeExtracted.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) gridViewDS.Focus(); };
             // clicking a node shows its whole text below, selectable for copying into a notepad or the check list
             treeExtracted.AfterSelect += (s, e) => ShowDetail(e.Node);
-            treeExtracted.NodeMouseClick += (s, e) => { treeExtracted.SelectedNode = e.Node; ShowDetail(e.Node); };
+            // selecting a node focuses the tree, which then swallows Left / Right for expand and
+            // collapse; hand the keyboard back to the dataset list once the click has been handled
+            treeExtracted.NodeMouseClick += (s, e) => { treeExtracted.SelectedNode = e.Node; ShowDetail(e.Node); BeginInvoke(new Action(() => gridViewDS.Focus())); };
+            treeExtracted.GotFocus += (s, e) => BeginInvoke(new Action(() => { if (treeExtracted.Focused) gridViewDS.Focus(); }));
             treeExtracted.ContextMenuStrip = BuildCopyMenu(() => treeExtracted.SelectedNode?.Tag as string ?? treeExtracted.SelectedNode?.Text,
                                                            () => TreeText(treeExtracted.Nodes));
             // Left/Right would expand and collapse; the keyboard belongs to navigation
@@ -230,7 +239,7 @@ namespace BooruDatasetTagManager
 
         private static void OpenWithShell(string path)
         {
-            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
+            if (string.IsNullOrEmpty(path) || !(File.Exists(path) || Directory.Exists(path))) return;
             try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }
             catch (Exception e) { MessageBox.Show(e.Message, "Open", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         }
@@ -463,7 +472,10 @@ namespace BooruDatasetTagManager
                 w.Expand();
             }
             treeExtracted.EndUpdate();
-            ShowDetail(null);
+            // land on the first stage's POSITIVE text, the thing a reviewer most often wants to read (user, 2026-10-02)
+            var firstPositive = FindFirstPositivePart(treeExtracted.Nodes);
+            treeExtracted.SelectedNode = firstPositive;
+            ShowDetail(firstPositive);
             buttonCopyWorkflow.Enabled = buttonSaveWorkflow.Enabled = info?.EmbeddedWorkflowJson != null;
             buttonFingerprint.Enabled = haveWorkflow && info != null && !info.FileMissing;
         }
@@ -473,6 +485,20 @@ namespace BooruDatasetTagManager
         /// earlier one is one line, a side equal to an earlier side is one line, and fields of one
         /// side that hold the same text (Flux clip_l + t5xxl) are one node labelled with both fields.
         /// </summary>
+        /// <summary>The first text part under the first stage's POSITIVE side, or null.</summary>
+        private static TreeNode FindFirstPositivePart(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode n in nodes)
+            {
+                if (n.Text == "Workflow")
+                    foreach (TreeNode step in n.Nodes)
+                        foreach (TreeNode side in step.Nodes)
+                            if (side.Text.StartsWith("POSITIVE") && side.Nodes.Count > 0)
+                                return side.Nodes[0];
+            }
+            return null;
+        }
+
         private static void AddPromptSteps(TreeNode parent, JObject doc, bool collapse)
         {
             var steps = doc["steps"] as JArray ?? new JArray();

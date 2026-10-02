@@ -49,6 +49,7 @@ namespace BooruDatasetTagManager
             checkBoxFixOnLoad.Checked = Program.Settings.FixTagsOnSaveLoad;
             AutoSortCheckBox.Checked = Program.Settings.AutoSort;
             checkBoxIncludeSubfolders.Checked = Program.Settings.IncludeSubfolders;
+            comboBoxTagMatch.SelectedIndex = (int)Program.Settings.DazzleTagMatch;
             checkBoxDazzleLayout.Checked = Program.Settings.DazzleLayout;
             //UI
             checkBoxCacheImages.Checked = Program.Settings.CacheOpenImages;
@@ -130,6 +131,7 @@ namespace BooruDatasetTagManager
             Program.Settings.AskSaveChanges = CheckAskChange.Checked;
             Program.Settings.AutoSort = AutoSortCheckBox.Checked;
             Program.Settings.IncludeSubfolders = checkBoxIncludeSubfolders.Checked;
+            Program.Settings.DazzleTagMatch = (DazzleRules.TagMatch)Math.Max(0, comboBoxTagMatch.SelectedIndex);
             Program.Settings.DazzleLayout = checkBoxDazzleLayout.Checked;
             //UI
             Program.Settings.CacheOpenImages = checkBoxCacheImages.Checked;

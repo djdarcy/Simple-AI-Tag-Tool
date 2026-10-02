@@ -82,7 +82,8 @@ namespace BooruDatasetTagManager
             splitContainer2.ResumeLayout();
             splitContainer1.ResumeLayout();
             ResumeLayout();
-            splitMiddle.SplitterDistance = Math.Max(80, splitMiddle.Height / 5);
+            splitMiddle.SplitterDistance = Math.Max(140, splitMiddle.Height * 2 / 5);
+            if (splitRules != null && splitRules.Height > 60) splitRules.SplitterDistance = Math.Max(60, splitRules.Height * 3 / 5);
             PlaceInfoPaneSplitter();
         }
 
@@ -163,8 +164,8 @@ namespace BooruDatasetTagManager
             checkLabel.Dock = DockStyle.Top;
             checkLabel.AutoSize = true;
             checkLabel.Padding = new Padding(2, 4, 2, 4);
-            splitMiddle.Panel1.Controls.Add(textBoxCheck);
-            splitMiddle.Panel1.Controls.Add(checkLabel);
+            // the Rules pane sits above the Check for box, both in the middle pane's top half
+            splitMiddle.Panel1.Controls.Add(BuildRulesPane(checkLabel, textBoxCheck));
 
             recolorTimer = new Timer();
             recolorTimer.Interval = 150;
@@ -485,23 +486,36 @@ namespace BooruDatasetTagManager
                 .ToList();
             bool haveImage = textBoxTags.Enabled;
             var tagRanges = haveImage ? Tokenize(textBoxTags.Text, TagSeparators()) : new List<TokenRange>();
-            var present = new HashSet<string>(tagRanges.Select(r => NormalizeTag(r.Text)));
+            // one matcher for everything: the Check for entries, the rules, and the caption colouring
+            var mode = Program.Settings.DazzleTagMatch;
+            var tagSet = new DazzleRules.TagSet(tagRanges.Select(r => r.Text), mode);
             var wanted = new HashSet<string>(checks.Where(c => !c.unwanted).Select(c => c.key));
             var unwantedKeys = new HashSet<string>(checks.Where(c => c.unwanted).Select(c => c.key));
+            var conflicts = new HashSet<string>();
+            var ev = EvaluateRulesForImage(tagSet, haveImage);
+            if (ev != null)
+            {
+                wanted.UnionWith(ev.Required);
+                unwantedKeys.UnionWith(ev.Forbidden);
+                conflicts.UnionWith(ev.Conflicts);
+            }
 
             var checkMarks = new List<(TokenRange, Color)>();
             if (haveImage)
             {
                 foreach (var c in checks)
-                    checkMarks.Add((c.range, present.Contains(c.key) != c.unwanted ? GoodBack : BadBack));
+                    checkMarks.Add((c.range, tagSet.Has(c.key) != c.unwanted ? GoodBack : BadBack));
             }
+            bool Matches(string term, string key) => term == key || (mode == DazzleRules.TagMatch.Lazy && DazzleRules.TagSet.PhraseIn(term, key) >= 0);
             var tagMarks = new List<(TokenRange, Color)>();
             foreach (var r in tagRanges)
             {
                 string key = NormalizeTag(r.Text);
-                if (unwantedKeys.Contains(key))
+                if (conflicts.Any(t => Matches(t, key)))
+                    tagMarks.Add((r, ConflictBack));
+                else if (unwantedKeys.Any(t => Matches(t, key)))
                     tagMarks.Add((r, BadBack));
-                else if (wanted.Contains(key))
+                else if (wanted.Any(t => Matches(t, key)))
                     tagMarks.Add((r, GoodBack));
             }
             PaintMarks(textBoxCheck, checkMarks);
@@ -668,7 +682,8 @@ namespace BooruDatasetTagManager
                     return true;
                 ignoreHeldKey = false;
             }
-            bool typing = IsTypingFocus();
+            // the rules grid uses arrows and Space itself (cell movement, edit); treat it as typing
+            bool typing = IsTypingFocus() || (gridRules != null && gridRules.Focused);
             bool inTagsBox = IsDazzleTextBoxFocused();
             Control boxToRefocus = textBoxCheck != null && textBoxCheck.Focused ? textBoxCheck : textBoxTags;
             int step = 0;
