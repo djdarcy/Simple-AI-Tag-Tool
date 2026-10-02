@@ -75,8 +75,8 @@ namespace BooruDatasetTagManager
             panelMiddleTop = new Panel { Dock = DockStyle.Fill, Name = "panelMiddleTop" };
             modeStrip = new ToolStrip { Name = "modeStrip", GripStyle = ToolStripGripStyle.Hidden, Dock = DockStyle.Top };
             modeReview = new ToolStripButton("Review") { CheckOnClick = false, Checked = true, ToolTipText = "Rules and the Check for list" };
-            modeRefine = new ToolStripButton("Refine") { CheckOnClick = false, ToolTipText = "Ask a local vision model (LM Studio) for a new caption and review it as a diff" };
-            modeChat = new ToolStripButton("Chat") { CheckOnClick = false, ToolTipText = "Talk with the model about the image; it can set the caption, rename or move the file through tools, every change undoable" };
+            modeRefine = new ToolStripButton("AI Refine") { CheckOnClick = false, ToolTipText = "AI Refine: ask a local vision model (LM Studio) for a new caption and review it as a diff" };
+            modeChat = new ToolStripButton("AI Chat") { CheckOnClick = false, ToolTipText = "AI Chat: talk with the model about the image; it can set the caption, rename or move the file through tools, every change undoable" };
             modeReview.Click += (s, e) => SetMiddleMode(0);
             modeRefine.Click += (s, e) => SetMiddleMode(1);
             modeChat.Click += (s, e) => SetMiddleMode(2);
@@ -122,6 +122,11 @@ namespace BooruDatasetTagManager
             buttonPlay.Click += async (s, e) => await RunRefineAsync();
             buttonStop = new ToolStripButton { Name = "buttonStop", Text = "Stop", Image = StopGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, Enabled = false, ToolTipText = "Stop: cancel the run (the server stops generating when the connection closes)" };
             buttonStop.Click += (s, e) => runCts?.Cancel();
+            // refresh the left side from the caption box by hand; it also follows typing (a comma or a space, or a pause) -- user, 2026-10-02
+            buttonRefreshCaption = new ToolStripButton { Name = "buttonRefreshCaption", Text = "Refresh", Image = RefreshGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, ToolTipText = "Refresh: redraw the Current caption chips from the caption box below. They also follow as you type, after each comma or space." };
+            buttonRefreshCaption.Click += (s, e) => { lastRenderKey = null; RenderProposalForCurrentImage(); };
+            captionFollowTimer = new System.Windows.Forms.Timer { Interval = 700 };
+            captionFollowTimer.Tick += (s, e) => { captionFollowTimer.Stop(); RenderProposalForCurrentImage(); };
             checkThink = new ToolStripButton("Think") { CheckOnClick = true, Checked = Program.Settings.DazzleRefineThink, ToolTipText = "Think: let the model reason before it answers. Slower (a few seconds), but it follows conditions and instructions more carefully; the reasoning is shown in Logs. Off sends reasoning_effort = none for a quick answer." };
             checkThink.CheckedChanged += (s, e) => Program.Settings.DazzleRefineThink = checkThink.Checked;
             checkSendRules = new ToolStripButton("Send rules") { CheckOnClick = true, Checked = Program.Settings.DazzleRefineSendRules, ToolTipText = "Send rules: include this folder's rules (satt-rules.json, as \"condition => tags\" lines) and the Check for list in the request, so the model knows what must and must not be in the caption. The reply is checked against the rules either way." };
@@ -131,8 +136,8 @@ namespace BooruDatasetTagManager
             buttonLogs = new ToolStripButton("Logs") { ToolTipText = "Logs: every run's request, the model's reasoning, the reply and any error, with Copy" };
             buttonLogs.Click += (s, e) => ShowLog();
             var buttonHelp = new ToolStripButton { Name = "buttonRefineHelp", Text = "Help", Image = HelpGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, Alignment = ToolStripItemAlignment.Right, ToolTipText = "Help: the Refine section of the user guide (opens in your browser)" };
-            buttonHelp.Click += (s, e) => OpenUrl(GuideUrl + "#refine-a-local-ai-pass");
-            strip.Items.AddRange(new ToolStripItem[] { new ToolStripLabel("Skill:"), comboSkills, buttonSaveSkill, new ToolStripSeparator(), buttonPlay, buttonStop, new ToolStripSeparator(), checkThink, checkSendRules, checkSchema, new ToolStripSeparator(), buttonLogs, buttonHelp });
+            buttonHelp.Click += (s, e) => OpenUrl(GuideUrl + "#ai-refine-a-local-ai-pass");
+            strip.Items.AddRange(new ToolStripItem[] { new ToolStripLabel("AI skill:"), comboSkills, buttonSaveSkill, new ToolStripSeparator(), buttonPlay, buttonStop, buttonRefreshCaption, new ToolStripSeparator(), checkThink, checkSendRules, checkSchema, new ToolStripSeparator(), buttonLogs, buttonHelp });
             foreach (ToolStripItem it in strip.Items) if (!string.IsNullOrEmpty(it.ToolTipText)) AttachBlockTip(strip, it, it.ToolTipText);
 
             var gridFont = Program.Settings.GridViewFont.GetFont();
@@ -178,8 +183,20 @@ namespace BooruDatasetTagManager
             splitInstruction.SplitterMoved += (s, e) => { if (!placingInstructionSplit && panelRefine.Visible) Program.Settings.DazzleRefineInstructionHeight = splitInstruction.SplitterDistance; };
             panelRefine.Controls.Add(splitInstruction);
             panelRefine.Controls.Add(strip);
-            // an edit to the caption box shows on the left side once the box is left (Enter / click away commits it)
-            if (textBoxTags != null) textBoxTags.Leave += (s, e) => RenderProposalForCurrentImage();
+            // an edit to the caption box shows on the left side as it is typed: at once after a comma or a space, else after a pause
+            if (textBoxTags != null)
+            {
+                textBoxTags.Leave += (s, e) => RenderProposalForCurrentImage();
+                textBoxTags.TextChanged += (s, e) =>
+                {
+                    if (panelRefine == null || !panelRefine.Visible || !textBoxTags.Focused) return;
+                    int at = textBoxTags.SelectionStart;
+                    char last = at > 0 && at <= textBoxTags.TextLength ? textBoxTags.Text[at - 1] : '\0';
+                    captionFollowTimer.Stop();
+                    if (last == ',' || last == ' ' || last == '\n') RenderProposalForCurrentImage();
+                    else captionFollowTimer.Start();
+                };
+            }
             splitMiddle.SplitterMoved += (s, e) => { if (!autoFittingMiddle && panelRefine.Visible) userMovedMiddle = true; };
         }
 
@@ -230,20 +247,48 @@ namespace BooruDatasetTagManager
         }
 
         private ToolTip blockTip;
+        private System.Windows.Forms.Timer blockTipShow, blockTipHide;
 
-        /// <summary>A tooltip for a strip item as a wrapped block (about 60 characters a line), shown for 20 seconds.</summary>
+        /// <summary>
+        /// A tooltip for a strip item as a wrapped block (about 60 characters a line): appears after half a second,
+        /// stays up to 15 seconds, and goes as soon as the cursor leaves the item. (A tip shown with a duration
+        /// ignores Hide() until the duration ends -- user, 2026-10-02 -- so the duration is a timer of our own.)
+        /// </summary>
         private void AttachBlockTip(ToolStrip strip, ToolStripItem item, string text)
         {
-            blockTip ??= new ToolTip { InitialDelay = 500, AutoPopDelay = 20000, ReshowDelay = 200, ShowAlways = true };
+            blockTip ??= new ToolTip { ShowAlways = true, UseAnimation = true, UseFading = true };
+            blockTipShow ??= new System.Windows.Forms.Timer { Interval = 500 };
+            blockTipHide ??= new System.Windows.Forms.Timer { Interval = 15000 };
+            blockTipHide.Tick += (s, e) => { blockTipHide.Stop(); blockTip.Hide(strip); };
             string wrapped = WrapText(text, 60);
             item.ToolTipText = null;
             item.MouseEnter += (s, e) =>
             {
-                var r = item.Bounds;
-                blockTip.Show(wrapped, strip, r.Left, r.Bottom + 4, 20000);
+                blockTipShow.Stop();
+                if (pendingTipShow != null) blockTipShow.Tick -= pendingTipShow;
+                pendingTipShow = (s2, e2) =>
+                {
+                    blockTipShow.Stop();
+                    var r = item.Bounds;
+                    blockTip.Show(wrapped, strip, r.Left, r.Bottom + 4);
+                    blockTipHide.Stop(); blockTipHide.Start();
+                };
+                blockTipShow.Tick += pendingTipShow;
+                blockTipShow.Start();
             };
-            item.MouseLeave += (s, e) => blockTip.Hide(strip);
+            void hideNow(object s, EventArgs e)
+            {
+                blockTipShow.Stop();
+                if (pendingTipShow != null) { blockTipShow.Tick -= pendingTipShow; pendingTipShow = null; }
+                blockTipHide.Stop();
+                blockTip.Hide(strip);
+            }
+            item.MouseLeave += hideNow;
+            // a click means the person is done reading: the tip must not sit over a dropdown or a dialog (user, 2026-10-02)
+            item.MouseDown += (s, e) => hideNow(s, e);
+            if (item is ToolStripComboBox combo) combo.DropDown += hideNow;
         }
+        private EventHandler pendingTipShow;
 
         private static string WrapText(string text, int width)
         {
@@ -288,6 +333,31 @@ namespace BooruDatasetTagManager
                 using var brush = new SolidBrush(Color.FromArgb(40, 90, 160));
                 var fmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
                 g.DrawString("?", font, brush, new RectangleF(0, 0, n, n), fmt);
+            }
+            return bmp;
+        }
+
+        private ToolStripButton buttonRefreshCaption;
+        private System.Windows.Forms.Timer captionFollowTimer;
+
+        /// <summary>A circular arrow.</summary>
+        private Bitmap RefreshGlyph()
+        {
+            int n = (int)Math.Round(16 * DeviceDpi / 96.0);
+            var bmp = new Bitmap(n, n);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                float m = n * 0.18f, w = Math.Max(1.5f, n / 9f);
+                var color = Color.FromArgb(40, 90, 160);
+                using var pen = new Pen(color, w) { StartCap = System.Drawing.Drawing2D.LineCap.Round, EndCap = System.Drawing.Drawing2D.LineCap.Round };
+                g.DrawArc(pen, m, m, n - 2 * m, n - 2 * m, -60, 290);          // most of a circle, open at the top right
+                using var brush = new SolidBrush(color);
+                float cx = n / 2f, r = (n - 2 * m) / 2f;                      // arrowhead at the arc's end (angle -60 degrees)
+                double a = -60 * Math.PI / 180;
+                var tip = new PointF(cx + (float)(r * Math.Cos(a)), cx + (float)(r * Math.Sin(a)));
+                float h = n * 0.26f;
+                g.FillPolygon(brush, new[] { new PointF(tip.X - h * 0.1f, tip.Y - h * 0.9f), new PointF(tip.X + h * 0.7f, tip.Y + h * 0.1f), new PointF(tip.X - h * 0.6f, tip.Y + h * 0.35f) });
             }
             return bmp;
         }

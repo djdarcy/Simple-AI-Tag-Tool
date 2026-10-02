@@ -61,6 +61,19 @@ namespace BooruDatasetTagManager
             listInfo.ContextMenuStrip = BuildCopyMenu(() => listInfo.SelectedItems.Count > 0 ? listInfo.SelectedItems[0].SubItems[1].Text : null,
                                                       () => string.Join(Environment.NewLine, listInfo.Items.Cast<ListViewItem>().Select(i => i.Text + ": " + i.SubItems[1].Text)));
             listInfo.Resize += (s, e) => { if (listInfo.Columns.Count == 2) listInfo.Columns[1].Width = Math.Max(200, listInfo.ClientSize.Width - listInfo.Columns[0].Width - 4); };
+            // the File name row is editable in place: double-click (or the menu); the rename goes through the same
+            // journaled operation Chat uses, so the caption file follows and Undo last change reverses it (user, 2026-10-02)
+            listInfo.MouseDoubleClick += (s, e) => { var hit = listInfo.HitTest(e.Location); if (hit.Item != null && hit.Item.Text == "File name") BeginRenameInPlace(hit.Item); };
+            listInfo.ContextMenuStrip.Items.Insert(0, new ToolStripMenuItem("Rename file...", null, (s, e) => { var row = listInfo.Items.Cast<ListViewItem>().FirstOrDefault(i => i.Text == "File name"); if (row != null) BeginRenameInPlace(row); }));
+            listInfo.ContextMenuStrip.Items.Insert(1, new ToolStripSeparator());
+            renameBox = new TextBox { Visible = false, BorderStyle = BorderStyle.FixedSingle, Font = listInfo.Font };
+            renameBox.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; CommitRenameInPlace(); }
+                else if (e.KeyCode == Keys.Escape) { e.SuppressKeyPress = true; renameBox.Visible = false; gridViewDS.Focus(); }
+            };
+            renameBox.LostFocus += (s, e) => { if (renameBox.Visible) renameBox.Visible = false; };
+            listInfo.Controls.Add(renameBox);
 
             var infoButtons = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, FlowDirection = FlowDirection.LeftToRight, Padding = new Padding(2), TabStop = false };
             buttonOpenFile = new Button { Text = "Open in default app", AutoSize = true, TabStop = false };
@@ -125,6 +138,20 @@ namespace BooruDatasetTagManager
             tabsInfo.TabPages.Add(tabExtracted);
             tabsInfo.MouseUp += (s, e) => gridViewDS.Focus();
             splitPreview.Panel2.Controls.Add(tabsInfo);
+            // a chevron at the tab strip's far right collapses the pane; a slim bar under the preview brings it back
+            // (the I key and View > Image info pane do the same; user, 2026-10-02)
+            buttonCollapseInfo = new Button { Name = "buttonCollapseInfo", Text = "", Image = ChevronGlyph(true), ImageAlign = ContentAlignment.MiddleCenter, FlatStyle = FlatStyle.Flat, TabStop = false, Width = 26, Height = 22, Anchor = AnchorStyles.Top | AnchorStyles.Right, Cursor = Cursors.Hand };
+            buttonCollapseInfo.FlatAppearance.BorderSize = 0;
+            buttonCollapseInfo.Location = new Point(splitPreview.Panel2.ClientSize.Width - buttonCollapseInfo.Width - 2, 0);
+            buttonCollapseInfo.Click += (s, e) => SetInfoPaneVisible(false);
+            new ToolTip().SetToolTip(buttonCollapseInfo, "Hide the image info pane (I, or View > Image info pane)");
+            splitPreview.Panel2.Controls.Add(buttonCollapseInfo);
+            buttonCollapseInfo.BringToFront();
+            splitPreview.Panel2.Resize += (s, e) => buttonCollapseInfo.Location = new Point(splitPreview.Panel2.ClientSize.Width - buttonCollapseInfo.Width - 2, 0);
+            barRestoreInfo = new Button { Name = "barRestoreInfo", Text = "Image info", Image = ChevronGlyph(false), ImageAlign = ContentAlignment.MiddleLeft, TextImageRelation = TextImageRelation.ImageBeforeText, Dock = DockStyle.Bottom, Height = 22, FlatStyle = FlatStyle.Flat, TabStop = false, TextAlign = ContentAlignment.MiddleLeft, Cursor = Cursors.Hand, Visible = !Program.Settings.DazzleInfoPaneVisible };
+            barRestoreInfo.FlatAppearance.BorderSize = 0;
+            barRestoreInfo.Click += (s, e) => SetInfoPaneVisible(true);
+            splitPreview.Panel1.Controls.Add(barRestoreInfo);
             splitPreview.Panel2Collapsed = !Program.Settings.DazzleInfoPaneVisible;
             splitPreview.SplitterMoved += (s, e) => { if (!splitPreview.Panel2Collapsed) Program.Settings.DazzleInfoPaneHeight = splitPreview.Height - splitPreview.SplitterDistance; };
 
@@ -194,8 +221,26 @@ namespace BooruDatasetTagManager
             if (splitPreview == null) return;
             splitPreview.Panel2Collapsed = !visible;
             menuInfoPane.Checked = visible;
+            if (barRestoreInfo != null) barRestoreInfo.Visible = !visible;
             Program.Settings.DazzleInfoPaneVisible = visible;
             if (visible) { PlaceInfoPaneSplitter(); RenderInfoPane(); }
+            gridViewDS.Focus();
+        }
+        private Button buttonCollapseInfo, barRestoreInfo;
+
+        /// <summary>A chevron pointing down (hide) or up (show), drawn for the screen's DPI; the glyph characters are not in the button font.</summary>
+        private Bitmap ChevronGlyph(bool down)
+        {
+            int n = (int)Math.Round(14 * DeviceDpi / 96.0);
+            var bmp = new Bitmap(n, n);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using var pen = new Pen(Color.FromArgb(70, 70, 70), Math.Max(1.5f, n / 7f)) { StartCap = System.Drawing.Drawing2D.LineCap.Round, EndCap = System.Drawing.Drawing2D.LineCap.Round };
+                float l = n * 0.2f, r = n * 0.8f, m = n / 2f, top = down ? n * 0.35f : n * 0.65f, tip = down ? n * 0.68f : n * 0.32f;
+                g.DrawLines(pen, new[] { new PointF(l, top), new PointF(m, tip), new PointF(r, top) });
+            }
+            return bmp;
         }
 
         private void ToggleInfoPane() => SetInfoPaneVisible(splitPreview != null && splitPreview.Panel2Collapsed);
@@ -416,8 +461,36 @@ namespace BooruDatasetTagManager
         {
             var item = new ListViewItem(key);
             item.SubItems.Add(value ?? "");
-            item.ToolTipText = value ?? "";
+            item.ToolTipText = key == "File name" ? (value ?? "") + "   (double-click to rename; the caption file follows; Undo in Chat)" : (value ?? "");
             listInfo.Items.Add(item);
+        }
+
+        private TextBox renameBox;
+
+        private void BeginRenameInPlace(ListViewItem row)
+        {
+            if (currentInfo == null || string.IsNullOrEmpty(currentInfo.Path) || !File.Exists(currentInfo.Path)) return;
+            var b = row.SubItems[1].Bounds;
+            renameBox.Bounds = new Rectangle(b.X, b.Y, Math.Max(200, b.Width - 4), b.Height);
+            renameBox.Text = Path.GetFileNameWithoutExtension(currentInfo.Path);
+            renameBox.Tag = currentInfo.Path;
+            renameBox.Visible = true;
+            renameBox.BringToFront();
+            renameBox.Focus();
+            renameBox.SelectAll();
+        }
+
+        private void CommitRenameInPlace()
+        {
+            string path = renameBox.Tag as string; string name = renameBox.Text.Trim();
+            renameBox.Visible = false;
+            if (path == null || name.Length == 0 || name == Path.GetFileNameWithoutExtension(path)) { gridViewDS.Focus(); return; }
+            var r = RenameImage(path, name);
+            SetStatus(r.ok ? "File " + r.message : "Rename failed: " + r.message);
+            Log("rename (info pane): " + Path.GetFileName(path) + " -> " + name + " : " + r.message);
+            if (!r.ok) MessageBox.Show(this, r.message, "Rename", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            RefreshChatResultPanel();
+            gridViewDS.Focus();
         }
 
         private void RenderExtracted(DazzleImageInfo info)

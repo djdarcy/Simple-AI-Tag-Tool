@@ -4,6 +4,18 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.13.1] - 2026-10-02
+
+### Added
+
+- Settings > UI scrolls when its rows run past the dialog's height, instead of needing the dialog resized.
+- A tooltip on the Refine or Chat strip goes away when its item is clicked or a dropdown opens, instead of sitting over the list.
+- A chevron at the right of the info pane's tab strip hides the pane; a slim "Image info" bar under the preview brings it back (the I key and View > Image info pane still do both).
+- AI Refine's **Current caption** chips follow the caption box as you type (after each comma or space, or a short pause), and a **Refresh** button beside Play/Stop redraws them on demand.
+- The Refine strip's tooltips go away as soon as the cursor leaves the item (they stayed their full 20 s), and stay at most 15 s.
+- The middle pane's modes are labelled **Review**, **AI Refine** and **AI Chat**, and the instruction dropdown **AI skill**, so the AI sections read as such.
+- The info pane's **File name** row can be edited in place: double-click it (or right-click > Rename file...), type the new name, Enter. The caption file is renamed with it, the dataset list follows, and the rename is journaled, so Chat's *Undo last change* reverses it.
+
 ## [2.13.0] - 2026-10-02
 
 ### Added

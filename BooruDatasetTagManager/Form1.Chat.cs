@@ -60,8 +60,8 @@ namespace BooruDatasetTagManager
             chatLogs = new ToolStripButton("Logs") { ToolTipText = "Logs: every request, the model's reasoning, each tool call and result, and errors" };
             chatLogs.Click += (s, e) => ShowLog();
             var help = new ToolStripButton { Name = "buttonChatHelp", Text = "Help", Image = HelpGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, Alignment = ToolStripItemAlignment.Right, ToolTipText = "Help: the Chat section of the user guide" };
-            help.Click += (s, e) => OpenUrl(GuideUrl + "#chat-an-assistant-that-acts");
-            strip.Items.AddRange(new ToolStripItem[] { new ToolStripLabel("Skill:"), comboChatSkills, chatSaveSkill, new ToolStripSeparator(), chatNewSession, new ToolStripSeparator(), chatThink, chatToolsOn, chatAskFiles, new ToolStripSeparator(), chatLogs, help });
+            help.Click += (s, e) => OpenUrl(GuideUrl + "#ai-chat-an-assistant-that-acts");
+            strip.Items.AddRange(new ToolStripItem[] { new ToolStripLabel("AI skill:"), comboChatSkills, chatSaveSkill, new ToolStripSeparator(), chatNewSession, new ToolStripSeparator(), chatThink, chatToolsOn, chatAskFiles, new ToolStripSeparator(), chatLogs, help });
             foreach (ToolStripItem it in strip.Items) if (!string.IsNullOrEmpty(it.ToolTipText)) AttachBlockTip(strip, it, it.ToolTipText);
 
             textChatInstruction = new TextBox { Name = "textChatInstruction", Multiline = true, Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical, AcceptsReturn = true, Font = gridFont };

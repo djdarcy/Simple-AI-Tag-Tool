@@ -57,6 +57,15 @@ namespace BooruDatasetTagManager
             checkBoxRememberFolders.Checked = Program.Settings.DazzleRememberFolders;
             checkBoxReopenLastFolder.Checked = Program.Settings.DazzleReopenLastFolder;
             textBoxComfydbgPath.Text = Program.Settings.DazzleComfydbgPath;
+            // the fork's rows run past the dialog's height; the tab (a third-party Tab, no AutoScroll of its own) gets a
+            // scrolling panel that takes over its controls, so the person scrolls rather than resizes (user, 2026-10-02)
+            if (!(tabUI.Controls.Count == 1 && tabUI.Controls[0].Name == "panelUiScroll"))
+            {
+                var scroller = new System.Windows.Forms.Panel { Name = "panelUiScroll", Dock = System.Windows.Forms.DockStyle.Fill, AutoScroll = true };
+                var items = tabUI.Controls.Cast<System.Windows.Forms.Control>().ToList();
+                foreach (var c in items) { tabUI.Controls.Remove(c); scroller.Controls.Add(c); }
+                tabUI.Controls.Add(scroller);
+            }
             numericRefineMaxTokens.Value = Math.Max(numericRefineMaxTokens.Minimum, Math.Min(numericRefineMaxTokens.Maximum, Program.Settings.DazzleRefineMaxTokens));
             numericRefineTemperature.Value = Math.Max(0, Math.Min(numericRefineTemperature.Maximum, (decimal)Program.Settings.DazzleRefineTemperature));
             numericRefineImageSide.Value = Math.Max(numericRefineImageSide.Minimum, Math.Min(numericRefineImageSide.Maximum, Program.Settings.DazzleRefineImageLongSide));
