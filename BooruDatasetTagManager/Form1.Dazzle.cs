@@ -65,6 +65,12 @@ namespace BooruDatasetTagManager
             splitContainer2.Panel1.Controls.Add(splitMiddle);
             BuildInfoPane();
             BuildExplorerBar();
+            // the data layout's start-up notes (a seeded settings copy, a newer configuration elsewhere, a junction
+            // not made): said once, in the status bar and the AI log, never a dialog
+            Program.Settings.DazzleDataPortable = DazzleData.IsPortable;   // the marker file is the switch; the setting mirrors it
+            Log("data: " + (DazzleData.IsPortable ? "portable, " : "") + DazzleData.BaseFolder);
+            foreach (var note in DazzleData.Notes) Log("data: " + note);
+            if (DazzleData.Notes.Count > 0) statusLabel.Text = DazzleData.Notes[DazzleData.Notes.Count - 1];
             // A picture box cannot take focus, so clicking the preview used to leave
             // focus (and Space) in the tags box. Send it to the dataset list instead.
             pictureBoxPreview.MouseDown += (s, e) => gridViewDS.Focus();

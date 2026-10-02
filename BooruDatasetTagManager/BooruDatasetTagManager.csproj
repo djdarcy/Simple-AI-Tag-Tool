@@ -62,6 +62,10 @@
     <PackageReference Include="TabControl" Version="2.1.2" />
   </ItemGroup>
   <ItemGroup>
+    <!-- vendored: ordered layers, the data layout, per-item stores, junction pairs (lib\VENDORED.md) -->
+    <ProjectReference Include="..\lib\Dazzle.Layers\Dazzle.Layers.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <None Update="Languages\en-US.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

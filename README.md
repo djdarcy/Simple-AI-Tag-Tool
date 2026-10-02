@@ -59,6 +59,7 @@ build.cmd run "C:\path\to\your\dataset"
 - `build.cmd` builds the program, `build.cmd run` also starts it, and `build.cmd run "<folder>"` opens that dataset. The program is `BooruDatasetTagManager\bin\Debug\net8.0-windows\Simple-AI-Tag-Tool.exe`.
 - The first build also clones and builds [ScreenLister](https://github.com/starik222/ScreenLister) next to this repository. The original tool uses it to take frames from videos. Images work without its native part; video previews need it.
 - To build by hand instead: clone ScreenLister next to this repository so the two folders sit side by side, build `ScreenLister/ScreenList/ScreenListerNET.csproj` in Release, then build `BooruDatasetTagManager.sln`.
+- [Building Simple-AI-Tag-Tool](docs/simple-ai-tag-tool/building.md) has the full detail. It covers Visual Studio, a single-file release build, the LM Studio setup for the AI modes, the AutoTagger service, and what to do when a build fails.
 
 ## Everything from BooruDatasetTagManager is still here
 

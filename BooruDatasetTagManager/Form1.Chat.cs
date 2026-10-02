@@ -46,8 +46,8 @@ namespace BooruDatasetTagManager
             var gridFont = Program.Settings.GridViewFont.GetFont();
             panelChat = new Panel { Dock = DockStyle.Fill, Name = "panelChat", Visible = false };
             var strip = new ToolStrip { Name = "chatStrip", GripStyle = ToolStripGripStyle.Hidden, Dock = DockStyle.Top, ShowItemToolTips = false };
-            comboChatSkills = new ToolStripComboBox("comboChatSkills") { DropDownStyle = ComboBoxStyle.DropDownList, AutoSize = false, Width = 190, ToolTipText = "Chat skills: the system instruction, one file each in skills\\chat beside the program. Placeholders {caption} {refined} {file} {folder} {rules} {checks} are filled in when a session starts." };
-            comboChatSkills.SelectedIndexChanged += (s, e) => LoadSelectedChatSkill();
+            comboChatSkills = new ToolStripComboBox("comboChatSkills") { DropDownStyle = ComboBoxStyle.DropDownList, AutoSize = false, Width = 190, ToolTipText = "Chat skills: the system instruction, one file each in skills\\chat (yours in the data folder, the shipped ones beside the program). Placeholders {caption} {refined} {file} {folder} {rules} {checks} are filled in when a session starts." };
+            comboChatSkills.SelectedIndexChanged += ChatSkillsSelectionChanged;
             chatSaveSkill = new ToolStripButton("Save as...") { ToolTipText = "Save the instruction text as a new chat skill file" };
             chatSaveSkill.Click += (s, e) => SaveChatSkillAs();
             chatNewSession = new ToolStripButton("New session") { ToolTipText = "Start the conversation again with the instruction as it is now; the journal of changes is kept" };
@@ -126,34 +126,46 @@ namespace BooruDatasetTagManager
 
         // ---------------------------------------------------------------- skills (chat)
 
-        private static string ChatSkillsFolder => Path.Combine(Program.AppPath, "skills", "chat");
+        private const string ChatKind = "chat";
         private string loadedChatSkillText = "";
 
-        private void LoadChatSkillsList()
+        private void ChatSkillsSelectionChanged(object sender, EventArgs e) => LoadSelectedChatSkill();
+
+        /// <summary>Refill the chat dropdown without firing the selection handler; load text only when the skill changed (as LoadSkillsList).</summary>
+        /// <param name="select">the skill to select, e.g. the one just saved</param>
+        private void LoadChatSkillsList(string select = null)
         {
             try
             {
-                Directory.CreateDirectory(ChatSkillsFolder);
-                if (!Directory.EnumerateFiles(ChatSkillsFolder, "*.md").Any() && !Directory.EnumerateFiles(ChatSkillsFolder, "*.txt").Any())
+                string house = DazzleData.HouseSkillsFolder(ChatKind);
+                Directory.CreateDirectory(house);
+                if (!DazzleData.SkillFiles(ChatKind, true).Any())
                 {
-                    File.WriteAllText(Path.Combine(ChatSkillsFolder, "Assistant.md"),
+                    File.WriteAllText(Path.Combine(house, "Assistant.md"),
                         "You are a careful assistant for a person refining an image dataset. You can see the current image. Answer questions about it plainly, and when asked to change its caption, name or folder, do it with the tools and confirm in one line.\n");
-                    File.WriteAllText(Path.Combine(ChatSkillsFolder, "Name from template.md"),
+                    File.WriteAllText(Path.Combine(house, "Name from template.md"),
                         "Rename the current image from its caption using this template, parts joined with double underscores, words inside a part joined with hyphens, all lower-case, no spaces:\n\n<subject>__<scene>__<objects>\n\nsubject = the main thing in the image (one or two words); scene = where it is; objects = up to three notable objects or features. Use the current caption and the latest AI proposal (get_image) as your source; look at the image only to settle what the caption leaves unclear. If a part cannot be found, ask instead of guessing. Current caption: {caption}\nLatest proposal: {refined}\n");
                 }
             }
             catch (Exception e) { AppendTranscript("skills folder: " + e.Message, ErrorColor, true); }
-            string keep = comboChatSkills.SelectedItem as string ?? Program.Settings.DazzleChatSkill;
-            comboChatSkills.Items.Clear();
+            string keep = select ?? loadedChatSkillName ?? Program.Settings.DazzleChatSkill;
+            comboChatSkills.SelectedIndexChanged -= ChatSkillsSelectionChanged;
             try
             {
-                foreach (var f in Directory.EnumerateFiles(ChatSkillsFolder).Where(f => f.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
-                    comboChatSkills.Items.Add(Path.GetFileNameWithoutExtension(f));
+                comboChatSkills.Items.Clear();
+                try
+                {
+                    foreach (var s in DazzleData.SkillFiles(ChatKind, Program.Settings.DazzleShowHouseSkills))
+                        comboChatSkills.Items.Add(s.Name);
+                }
+                catch (Exception) { }
+                if (comboChatSkills.Items.Count == 0) return;
+                int idx = string.IsNullOrEmpty(keep) ? -1 : comboChatSkills.Items.IndexOf(keep);
+                comboChatSkills.SelectedIndex = idx >= 0 ? idx : 0;
             }
-            catch (Exception) { }
-            if (comboChatSkills.Items.Count == 0) return;
-            int idx = string.IsNullOrEmpty(keep) ? -1 : comboChatSkills.Items.IndexOf(keep);
-            comboChatSkills.SelectedIndex = idx >= 0 ? idx : 0;
+            finally { comboChatSkills.SelectedIndexChanged += ChatSkillsSelectionChanged; }
+            string now = comboChatSkills.SelectedItem as string;
+            if (now != null && !string.Equals(now, loadedChatSkillName, StringComparison.OrdinalIgnoreCase)) LoadSelectedChatSkill();
         }
 
         private void LoadSelectedChatSkill()
@@ -163,8 +175,8 @@ namespace BooruDatasetTagManager
             bool changed = !string.Equals(name, loadedChatSkillName, StringComparison.OrdinalIgnoreCase);
             loadedChatSkillName = name;
             Program.Settings.DazzleChatSkill = name;
-            string path = Directory.EnumerateFiles(ChatSkillsFolder).FirstOrDefault(f => string.Equals(Path.GetFileNameWithoutExtension(f), name, StringComparison.OrdinalIgnoreCase));
-            try { loadedChatSkillText = path != null ? File.ReadAllText(path).Trim() : ""; } catch (Exception) { loadedChatSkillText = ""; }
+            var skill = DazzleData.FindSkill(ChatKind, name, Program.Settings.DazzleShowHouseSkills);
+            try { loadedChatSkillText = skill != null ? File.ReadAllText(skill.Path).Trim() : ""; } catch (Exception) { loadedChatSkillText = ""; }
             textChatInstruction.Text = loadedChatSkillText;
             // a list refresh re-selects the same skill; only a real change is worth a line (user's session, 2026-10-02)
             if (changed && chatHistory != null && chatHistory.Count > 1) AppendTranscript("skill changed to '" + name + "' -- takes effect at the next New session", ToolColor, true);
@@ -178,10 +190,12 @@ namespace BooruDatasetTagManager
             foreach (char c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
             try
             {
-                Directory.CreateDirectory(ChatSkillsFolder);
-                File.WriteAllText(Path.Combine(ChatSkillsFolder, name.Trim() + ".md"), textChatInstruction.Text.TrimEnd() + "\n");
-                Program.Settings.DazzleChatSkill = name.Trim();
-                LoadChatSkillsList();
+                name = name.Trim();
+                File.WriteAllText(Path.Combine(DazzleData.SkillsWriteFolder(ChatKind), name + ".md"), textChatInstruction.Text.TrimEnd() + "\n");
+                Program.Settings.DazzleChatSkill = name;
+                loadedChatSkillName = name;    // the box already holds this skill's text: the refresh selects it without reloading
+                loadedChatSkillText = textChatInstruction.Text.Trim();
+                LoadChatSkillsList(name);
             }
             catch (Exception e) { AppendTranscript("could not save the skill: " + e.Message, ErrorColor, true); }
         }
@@ -215,7 +229,7 @@ namespace BooruDatasetTagManager
         {
             JObject Obj(string props = null) => JObject.Parse("{\"type\":\"object\",\"properties\":{" + (props ?? "") + "},\"required\":[" + (props == null ? "" : "\"" + props.Substring(1, props.IndexOf('"', 1) - 1) + "\"") + "],\"additionalProperties\":false}");
             return new JArray(
-                DazzleLmStudio.Tool("get_image", "The current image's facts: file name, folder, caption as it stands, the latest AI proposal from Refine, the folder's rules, the Check for list, and its position in the dataset.", Obj()),
+                DazzleLmStudio.Tool("get_image", "The current image's facts: file name, folder, caption as it stands, the latest AI proposal from Refine, and its position in the dataset.", Obj()),
                 DazzleLmStudio.Tool("set_caption", "Replace the current image's caption. The text goes into the caption box as if typed; it is saved to the file when the user saves.", Obj("\"caption\":{\"type\":\"string\",\"description\":\"the complete new caption, normally a comma-separated tag line\"}")),
                 DazzleLmStudio.Tool("rename_image", "Rename the current image file; its caption file is renamed with it. Give the new base name only: no extension, no folder.", Obj("\"new_name\":{\"type\":\"string\",\"description\":\"the new base name without extension\"}")),
                 DazzleLmStudio.Tool("move_image", "Move the current image and its caption file to a folder inside the dataset folder, given relative to it (for example _rejects or sub/portraits). The folder is created if needed.", Obj("\"folder\":{\"type\":\"string\",\"description\":\"target folder, relative to the dataset folder\"}")),
@@ -318,8 +332,9 @@ namespace BooruDatasetTagManager
                         {
                             ["file"] = Path.GetFileName(path), ["folder"] = Path.GetDirectoryName(path),
                             ["caption"] = textBoxTags != null && textBoxTags.Enabled ? textBoxTags.Text.Trim() : "",
-                            ["latest_proposal"] = refined, ["rules"] = string.Join("\n", folderRules.Where(x => x.Error == null && !x.IsComment && !x.IsEmpty).Select(x => x.Line)),
-                            ["check_for"] = textBoxCheck?.Text?.Trim() ?? "", ["position"] = DatasetPosition(path).position + " of " + DatasetPosition(path).total,
+                            // the folder's rules and the Check for list are left out (user, 2026-10-02): sent only when a
+                            // skill places {rules} or {checks}, until Settings > AI makes automatic sending a choice
+                            ["latest_proposal"] = refined, ["position"] = DatasetPosition(path).position + " of " + DatasetPosition(path).total,
                         };
                         AppendTranscript("[get_image]", ToolColor, true);
                         return o.ToString(Newtonsoft.Json.Formatting.None);

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Dazzle</RootNamespace>
+    <AssemblyName>Dazzle.Layers</AssemblyName>
+    <Version>0.1.0</Version>
+    <Description>Vendored: ordered layers with declared resolution policies (first wins, union, merge, key merge); the portable/home/documents data layout; per-item sidecar/adjacent/store files; junction pairs. No UI, no app references. See VENDORED.md.</Description>
+  </PropertyGroup>
+</Project>

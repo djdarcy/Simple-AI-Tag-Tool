@@ -24,7 +24,7 @@ namespace BooruDatasetTagManager
         private Panel panelRefine;
         private ToolStripComboBox comboSkills;
         private ToolStripButton buttonPlay, buttonStop, buttonLogs, buttonSaveSkill;
-        private ToolStripButton checkThink, checkSendRules, checkSchema;
+        private ToolStripButton checkThink, checkSchema;
         private TextBox textInstruction;
         private Label labelRefineStatus;
         private SplitContainer splitSides;
@@ -41,7 +41,9 @@ namespace BooruDatasetTagManager
         private readonly HashSet<int> keptLeft = new HashSet<int>();
         private string loadedSkillText = "";
 
-        private const string OutputContract = "\n\nReply with the complete new caption only, as one line of comma-separated items. A short descriptive sentence may be one of the items, but it must not contain commas (use 'and' instead), because commas separate items. Keep tags that are still true, drop tags that are false, add what is missing. No labels such as 'Tags:' or 'Caption:', no preamble, no explanation.";
+        // Format only: what the tool needs to read the reply. What to keep, drop or add is the skill's to say (user,
+        // 2026-10-02: "Keep tags that are still true, drop ... add what is missing" turned every skill into a captioning pass).
+        private const string OutputContract = "\n\nReply with the complete new caption only, as one line of comma-separated items. A short descriptive sentence may be one of the items, but it must not contain commas (use 'and' instead), because commas separate items. No labels such as 'Tags:' or 'Caption:', no preamble, no explanation.";
 
         /// <summary>
         /// Tidy what a model adds despite the contract: a label ("Tags: a, b"), and a sentence that runs straight into
@@ -110,7 +112,7 @@ namespace BooruDatasetTagManager
         {
             panelRefine = new Panel { Dock = DockStyle.Fill, Name = "panelRefine", Visible = false };
             var strip = new ToolStrip { Name = "refineStrip", GripStyle = ToolStripGripStyle.Hidden, Dock = DockStyle.Top };
-            comboSkills = new ToolStripComboBox("comboSkills") { DropDownStyle = ComboBoxStyle.DropDownList, AutoSize = false, Width = 190, ToolTipText = "Skills: one file each in the skills folder beside the program" };
+            comboSkills = new ToolStripComboBox("comboSkills") { DropDownStyle = ComboBoxStyle.DropDownList, AutoSize = false, Width = 190, ToolTipText = "AI skills: one file each in skills\\refine in your data folder, plus the shipped ones beside the program" };
             comboSkills.SelectedIndexChanged += SkillsSelectionChanged;
             buttonSaveSkill = new ToolStripButton("Save as...") { ToolTipText = "Save the instruction text as a new skill file" };
             buttonSaveSkill.Click += (s, e) => SaveSkillAs();
@@ -129,15 +131,13 @@ namespace BooruDatasetTagManager
             captionFollowTimer.Tick += (s, e) => { captionFollowTimer.Stop(); RenderProposalForCurrentImage(); };
             checkThink = new ToolStripButton("Think") { CheckOnClick = true, Checked = Program.Settings.DazzleRefineThink, ToolTipText = "Think: let the model reason before it answers. Slower (a few seconds), but it follows conditions and instructions more carefully; the reasoning is shown in Logs. Off sends reasoning_effort = none for a quick answer." };
             checkThink.CheckedChanged += (s, e) => Program.Settings.DazzleRefineThink = checkThink.Checked;
-            checkSendRules = new ToolStripButton("Send rules") { CheckOnClick = true, Checked = Program.Settings.DazzleRefineSendRules, ToolTipText = "Send rules: include this folder's rules (satt-rules.json, as \"condition => tags\" lines) and the Check for list in the request, so the model knows what must and must not be in the caption. The reply is checked against the rules either way." };
-            checkSendRules.CheckedChanged += (s, e) => Program.Settings.DazzleRefineSendRules = checkSendRules.Checked;
             checkSchema = new ToolStripButton("Schema") { CheckOnClick = true, Checked = Program.Settings.DazzleRefineSchema, ToolTipText = "Schema: ask the server for the reply as strict JSON {\"caption\": ...} so the model cannot wrap the caption in chatter. If the server refuses the format, the run is repeated for plain text automatically. Turn off only for a server that answers badly to it." };
             checkSchema.CheckedChanged += (s, e) => Program.Settings.DazzleRefineSchema = checkSchema.Checked;
             buttonLogs = new ToolStripButton("Logs") { ToolTipText = "Logs: every run's request, the model's reasoning, the reply and any error, with Copy" };
             buttonLogs.Click += (s, e) => ShowLog();
             var buttonHelp = new ToolStripButton { Name = "buttonRefineHelp", Text = "Help", Image = HelpGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, Alignment = ToolStripItemAlignment.Right, ToolTipText = "Help: the Refine section of the user guide (opens in your browser)" };
             buttonHelp.Click += (s, e) => OpenUrl(GuideUrl + "#ai-refine-a-local-ai-pass");
-            strip.Items.AddRange(new ToolStripItem[] { new ToolStripLabel("AI skill:"), comboSkills, buttonSaveSkill, new ToolStripSeparator(), buttonPlay, buttonStop, buttonRefreshCaption, new ToolStripSeparator(), checkThink, checkSendRules, checkSchema, new ToolStripSeparator(), buttonLogs, buttonHelp });
+            strip.Items.AddRange(new ToolStripItem[] { new ToolStripLabel("AI skill:"), comboSkills, buttonSaveSkill, new ToolStripSeparator(), buttonPlay, buttonStop, buttonRefreshCaption, new ToolStripSeparator(), checkThink, checkSchema, new ToolStripSeparator(), buttonLogs, buttonHelp });
             foreach (ToolStripItem it in strip.Items) if (!string.IsNullOrEmpty(it.ToolTipText)) AttachBlockTip(strip, it, it.ToolTipText);
 
             var gridFont = Program.Settings.GridViewFont.GetFont();
@@ -378,30 +378,45 @@ namespace BooruDatasetTagManager
 
         // ---------------------------------------------------------------- skills
 
-        private static string SkillsFolder => Path.Combine(Program.AppPath, "skills");
+        // skills are read through the data layers (DazzleData): the person's folder first, then the other tiers, then the house set beside the program
+        private const string RefineKind = "refine";
 
-        private void LoadSkillsList()
+        /// <summary>
+        /// Refill the dropdown. The selection is put back without firing SkillsSelectionChanged, and the skill's text is
+        /// loaded only when the selected skill is a different one: a refresh (entering the mode, Save as...) must not
+        /// overwrite the instruction box. User, 2026-10-02: after Save as... the list jumped to the previously selected
+        /// skill and loaded its text over the one just saved.
+        /// </summary>
+        /// <param name="select">the skill to select, e.g. the one just saved; otherwise the current one, then the setting</param>
+        private void LoadSkillsList(string select = null)
         {
             try
             {
-                Directory.CreateDirectory(SkillsFolder);
-                if (!Directory.EnumerateFiles(SkillsFolder, "*.md").Any() && !Directory.EnumerateFiles(SkillsFolder, "*.txt").Any())
+                Directory.CreateDirectory(DazzleData.HouseSkillsFolder(RefineKind));
+                if (!DazzleData.SkillFiles(RefineKind, true).Any())
                     WriteDefaultSkills();
             }
             catch (Exception e) { labelRefineStatus.Text = "skills folder: " + e.Message; }
-            string keep = comboSkills.SelectedItem as string ?? Program.Settings.DazzleRefineSkill;
-            comboSkills.Items.Clear();
+            string keep = select ?? lastSkillName ?? Program.Settings.DazzleRefineSkill;
+            comboSkills.SelectedIndexChanged -= SkillsSelectionChanged;
             try
             {
-                foreach (var f in Directory.EnumerateFiles(SkillsFolder).Where(f => f.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
-                    comboSkills.Items.Add(Path.GetFileNameWithoutExtension(f));
+                comboSkills.Items.Clear();
+                try
+                {
+                    foreach (var s in DazzleData.SkillFiles(RefineKind, Program.Settings.DazzleShowHouseSkills))
+                        comboSkills.Items.Add(s.Name);
+                }
+                catch (Exception) { }
+                comboSkills.Items.Add(LoadFileEntry);
+                comboSkills.Items.Add(OpenFolderEntry);
+                int idx = string.IsNullOrEmpty(keep) ? -1 : comboSkills.Items.IndexOf(keep);
+                if (idx < 0 && comboSkills.Items.Count > 2) idx = 0;
+                if (idx >= 0) comboSkills.SelectedIndex = idx;
             }
-            catch (Exception) { }
-            comboSkills.Items.Add(LoadFileEntry);
-            comboSkills.Items.Add(OpenFolderEntry);
-            int idx = string.IsNullOrEmpty(keep) ? -1 : comboSkills.Items.IndexOf(keep);
-            if (idx < 0 && comboSkills.Items.Count > 2) idx = 0;
-            if (idx >= 0) comboSkills.SelectedIndex = idx;
+            finally { comboSkills.SelectedIndexChanged += SkillsSelectionChanged; }
+            string now = comboSkills.SelectedItem as string;
+            if (now != null && !string.Equals(now, lastSkillName, StringComparison.OrdinalIgnoreCase)) LoadSelectedSkill();
         }
 
         // the two actions at the end of the dropdown (user, 2026-10-02: a way to load any text file, and to reach the folder for a real editor)
@@ -411,7 +426,7 @@ namespace BooruDatasetTagManager
 
         private void LoadInstructionFromFile()
         {
-            using var dlg = new OpenFileDialog { Title = "Load an instruction file", Filter = "Text and Markdown|*.txt;*.md|All files|*.*", InitialDirectory = SkillsFolder };
+            using var dlg = new OpenFileDialog { Title = "Load an instruction file", Filter = "Text and Markdown|*.txt;*.md|All files|*.*", InitialDirectory = DazzleData.SkillsWriteFolder(RefineKind) };
             if (dlg.ShowDialog(this) != DialogResult.OK) return;
             try
             {
@@ -424,9 +439,10 @@ namespace BooruDatasetTagManager
 
         private void WriteDefaultSkills()
         {
-            File.WriteAllText(Path.Combine(SkillsFolder, "Describe the subject.md"),
+            string house = DazzleData.HouseSkillsFolder(RefineKind);
+            File.WriteAllText(Path.Combine(house, "Describe the subject.md"),
                 "You caption images for a training dataset. Look at the image and describe the primary subject in one or two plain sentences, then list tags: what the subject is, its notable features (colour, clothing, expression, pose), the setting, the lighting and the style or medium. Keep every current tag that is still true; remove tags that are not true for this image; use the same style of tag names the current caption uses.\n");
-            File.WriteAllText(Path.Combine(SkillsFolder, "Inventory the objects.md"),
+            File.WriteAllText(Path.Combine(house, "Inventory the objects.md"),
                 "You caption images for a training dataset. Make an inventory of everything visible in the image: every distinct object, creature, piece of clothing, prop and background element, one tag each, specific nouns (\"wooden crate\", not \"object\"). Keep the current tags that are still true and add what is missing. Do not describe mood or style unless the current caption already does.\n");
         }
 
@@ -443,16 +459,16 @@ namespace BooruDatasetTagManager
                 comboSkills.SelectedIndexChanged -= SkillsSelectionChanged;
                 try { comboSkills.SelectedIndex = back; } finally { comboSkills.SelectedIndexChanged += SkillsSelectionChanged; }
                 if (name == LoadFileEntry) LoadInstructionFromFile();
-                else { try { Directory.CreateDirectory(SkillsFolder); OpenWithShell(SkillsFolder); } catch (Exception e) { labelRefineStatus.Text = "could not open the folder: " + e.Message; } }
+                else { try { OpenWithShell(DazzleData.SkillsWriteFolder(RefineKind)); } catch (Exception e) { labelRefineStatus.Text = "could not open the folder: " + e.Message; } }
                 return;
             }
             lastSkillName = name;
             Program.Settings.DazzleRefineSkill = name;
-            string path = Directory.EnumerateFiles(SkillsFolder).FirstOrDefault(f => string.Equals(Path.GetFileNameWithoutExtension(f), name, StringComparison.OrdinalIgnoreCase));
-            try { loadedSkillText = path != null ? File.ReadAllText(path).Trim() : ""; }
+            var skill = DazzleData.FindSkill(RefineKind, name, Program.Settings.DazzleShowHouseSkills);
+            try { loadedSkillText = skill != null ? File.ReadAllText(skill.Path).Trim() : ""; }
             catch (Exception e) { loadedSkillText = ""; labelRefineStatus.Text = "could not read the skill: " + e.Message; return; }
             textInstruction.Text = loadedSkillText;
-            labelRefineStatus.Text = "skill: " + name;
+            labelRefineStatus.Text = "skill: " + name + (skill != null ? " (" + skill.Source + ")" : "");
         }
 
         private void SaveSkillAs()
@@ -462,12 +478,14 @@ namespace BooruDatasetTagManager
             foreach (char c in Path.GetInvalidFileNameChars()) name = name.Replace(c, '_');
             try
             {
-                Directory.CreateDirectory(SkillsFolder);
-                File.WriteAllText(Path.Combine(SkillsFolder, name.Trim() + ".md"), textInstruction.Text.TrimEnd() + "\n");
+                name = name.Trim();
+                File.WriteAllText(Path.Combine(DazzleData.SkillsWriteFolder(RefineKind), name + ".md"), textInstruction.Text.TrimEnd() + "\n");
                 loadedSkillText = textInstruction.Text.Trim();
-                Program.Settings.DazzleRefineSkill = name.Trim();
-                LoadSkillsList();
-                labelRefineStatus.Text = "saved skill: " + name.Trim();
+                Program.Settings.DazzleRefineSkill = name;
+                lastSkillName = name;          // the box already holds this skill's text: the refresh selects it without reloading
+                LoadSkillsList(name);
+                var saved = DazzleData.FindSkill(RefineKind, name, Program.Settings.DazzleShowHouseSkills);
+                labelRefineStatus.Text = "saved skill: " + name + (saved != null ? " (" + saved.Source + ")" : "");
             }
             catch (Exception e) { labelRefineStatus.Text = "could not save the skill: " + e.Message; }
         }
@@ -499,18 +517,11 @@ namespace BooruDatasetTagManager
                 if (probe.Warning != null) labelRefineStatus.Text = "warning: " + probe.Warning;
 
                 var (bytes, mime, note) = DazzleLmStudio.PrepareImage(imagePath, Program.Settings.DazzleRefineImageLongSide);
+                // Only the skill and the caption go with the image. The folder's rules and the Check for list are no longer
+                // sent automatically (user, 2026-10-02: the model read the Check for list as tags to add); sending them
+                // becomes the person's choice on Settings > AI, or a placeholder the skill places itself.
                 var user = new StringBuilder();
-                user.Append("Current caption:\n").Append(leftCaption.Length > 0 ? leftCaption : "(none)").Append('\n');
-                if (checkSendRules.Checked)
-                {
-                    var ruleLines = folderRules.Where(r => r.Error == null && !r.IsComment && !r.IsEmpty).Select(r => r.Line).ToList();
-                    if (ruleLines.Count > 0)
-                        user.Append("\nConditions that must hold in the caption you return (\"condition => tags\"; a leading - means the tag must be absent; ! & | are not, and, or):\n").Append(string.Join("\n", ruleLines)).Append('\n');
-                    string checks = textBoxCheck?.Text?.Trim() ?? "";
-                    if (checks.Length > 0)
-                        user.Append("\nTags being checked for (a leading - means unwanted): ").Append(checks.Replace("\n", ", ")).Append('\n');
-                }
-                user.Append("\nUpdate the caption from the image.");
+                user.Append("Current caption:\n").Append(leftCaption.Length > 0 ? leftCaption : "(none)");
                 var req = new DazzleLmStudio.Request
                 {
                     Model = probe.Model, SystemPrompt = instruction + OutputContract, UserText = user.ToString(),

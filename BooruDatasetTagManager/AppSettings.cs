@@ -82,6 +82,9 @@ namespace BooruDatasetTagManager
         public bool DazzleChatAskFiles { get; set; } = false;
         public bool DazzleChatTools { get; set; } = true;
         public int DazzleChatInstructionHeight { get; set; } = 0;
+        public bool DazzleDataPortable { get; set; } = false;        // mirrors the "portable" marker beside the exe, which is the real switch (DazzleData)
+        public int DazzleConversationStore { get; set; } = 2;        // per-image files: 0 sidecar, 1 .satt in the dataset, 2 the program's store
+        public bool DazzleShowHouseSkills { get; set; } = true;      // list the skills shipped beside the program as well as the person's own
 
         public bool LoadSettingsLoadPreviewImages { get; set; } = true;
         public bool LoadSettingsReadMetadata { get; set; } = false;
@@ -177,6 +180,9 @@ namespace BooruDatasetTagManager
                 DazzleChatAskFiles = tempSettings.DazzleChatAskFiles;
                 DazzleChatTools = tempSettings.DazzleChatTools;
                 DazzleChatInstructionHeight = tempSettings.DazzleChatInstructionHeight;
+                DazzleDataPortable = tempSettings.DazzleDataPortable;
+                DazzleConversationStore = tempSettings.DazzleConversationStore;
+                DazzleShowHouseSkills = tempSettings.DazzleShowHouseSkills;
                 LoadSettingsLoadPreviewImages = tempSettings.LoadSettingsLoadPreviewImages;
                 LoadSettingsReadMetadata = tempSettings.LoadSettingsReadMetadata;
                 if (!string.IsNullOrEmpty(tempSettings.ColorScheme))

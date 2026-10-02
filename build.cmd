@@ -26,8 +26,10 @@ if not exist "..\ScreenLister\ScreenList\bin\Release\net6.0-windows\ScreenLister
     dotnet build "..\ScreenLister\ScreenList\ScreenListerNET.csproj" -c Release -v quiet || exit /b 1
 )
 
-rem ErrorsOnly hides upstream's harmless NU1701 warnings (two .NET Framework UI packages)
-dotnet build "BooruDatasetTagManager\BooruDatasetTagManager.csproj" -c Debug -v quiet -nologo -clp:ErrorsOnly || exit /b 1
+rem ErrorsOnly hides upstream's long-standing warnings (NU1701 for two .NET Framework UI packages, and
+rem about 40 compiler warnings in upstream files). -tl:off is needed with it: the .NET terminal logger,
+rem used when the console supports it, ignores -clp and prints every warning.
+dotnet build "BooruDatasetTagManager\BooruDatasetTagManager.csproj" -c Debug -v quiet -nologo -tl:off -clp:ErrorsOnly || exit /b 1
 
 set "EXE=%~dp0BooruDatasetTagManager\bin\Debug\net8.0-windows\Simple-AI-Tag-Tool.exe"
 echo.

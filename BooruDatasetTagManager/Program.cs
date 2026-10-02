@@ -31,8 +31,9 @@ namespace BooruDatasetTagManager
 #endif
             Application.SetCompatibleTextRenderingDefault(false);
             AppPath = Application.StartupPath;
-            Settings = new AppSettings(Application.StartupPath);
-            RecentFolders = new DazzleRecentFolders(Application.StartupPath);
+            DazzleData.Initialize(AppPath);   // settings and recent folders live in the data base (portable or ~\.satt)
+            Settings = new AppSettings(DazzleData.BaseFolder);
+            RecentFolders = new DazzleRecentFolders(DazzleData.BaseFolder);
             EditableTagListLocker = new SemaphoreSlim(1,1);
             ListChangeLocker = new object();
             TranslationLocker = new SemaphoreSlim(1, 1);

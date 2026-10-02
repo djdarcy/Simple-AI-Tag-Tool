@@ -4,6 +4,31 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.14.0] - 2026-10-02
+
+### Added
+
+- Your own data has a home of its own. An installed copy keeps settings, recent folders, saved skills, conversations and logs in `%USERPROFILE%\.satt`. On the first run it copies `settings.json` and `recent-folders.json` from the program folder, leaving the originals in place. It also creates `Documents\Simple-AI-Tag-Tool` for skills you keep yourself, with a link from each folder to the other.
+- A `portable` file beside the program keeps everything in the program folder instead, as before, and creates nothing in your profile. If `.satt` also holds settings, the status bar and the AI log say so once.
+- AI skill lists are read from your data folder, then from `Documents\Simple-AI-Tag-Tool`, then from the skills shipped beside the program. A skill of yours with the same name as a shipped one replaces it, and deleting yours brings the shipped one back. **Save as...** writes to your data folder. The status line says which folder a skill came from.
+- A build guide, `docs/simple-ai-tag-tool/building.md`. It covers the requirements, `build.cmd`, the Visual Studio and command-line routes, a single-file release build, what the program creates when it runs, the LM Studio setup, the AutoTagger service, and troubleshooting.
+
+### Changed
+
+- The layering, data-folder, per-image-file and folder-link code lives in a separate library inside the repository, `lib\Dazzle.Layers`, which has no dependency on the application, so another tool can reuse it.
+- `build.cmd` shows errors only again in terminals where .NET uses its newer terminal logger, which ignored the errors-only option and printed about forty of the original project's long-standing warnings.
+
+### Removed
+
+- The **Send rules** toggle on the AI Refine strip, since the rules and the Check for list are no longer sent.
+
+### Fixed
+
+- AI Refine no longer sends the folder's rules or the Review mode's Check for list with every request. The model read the Check for list as tags to add, so a list left over from another dataset put unrelated tags into proposals. AI Chat's `get_image` tool leaves them out too. A Chat skill can still include them on purpose with `{rules}` and `{checks}`. Choosing what is sent automatically will move to the Settings > AI page.
+- The fixed text that AI Refine adds to every skill now only sets the reply's format: one comma-separated line, no labels. It used to say "keep tags that are still true, drop tags that are false, add what is missing", which turned any skill into a general captioning pass.
+- **Save as...** in AI Refine and AI Chat keeps the skill you just saved selected, with its text in the box. Before, the list jumped back to the previously selected skill and loaded that skill's text over yours.
+- Switching to AI Refine or AI Chat no longer reloads the selected skill, so an unsaved edit to the instruction survives switching modes.
+
 ## [2.13.1] - 2026-10-02
 
 ### Added
