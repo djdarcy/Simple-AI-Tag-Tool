@@ -1,0 +1,105 @@
+# Simple-AI-Tag-Tool user guide
+
+Simple-AI-Tag-Tool is a caption review tool for LoRA and other image-training datasets. You open a folder of images whose captions sit beside them in `.txt` files, step through the images one at a time, and see at a glance which tags each caption has that you want, and which it has that you don't.
+
+It is a fork of [BooruDatasetTagManager](https://github.com/starik222/BooruDatasetTagManager) by starik222 (MIT License). Everything that tool does is still here; this fork adds a review layout on top. For the original features (autotagger, translation, tag grid operations), see the [upstream README](https://github.com/starik222/BooruDatasetTagManager#readme).
+
+## The window
+
+| Pane | What it shows |
+|---|---|
+| **Left: preview** | The current image. The *All / Common tags* and *AutoTagger preview* tabs are still here, behind the preview. |
+| **Middle, top: Check for** | Your list of tags to check every image against. |
+| **Middle, bottom: tags** | The current image's caption as one editable, comma-separated line, exactly as the `.txt` file holds it. The original tag grid is on the *Grid* tab. |
+| **Right: dataset** | The images in the folder. Click one, or step through them with the keyboard. |
+
+To go back to the original layout, untick Settings > General > *Preview \| Tags \| Dataset layout* and restart.
+
+## Opening a dataset
+
+- **File > Open folder**, or start the program with a folder: `Simple-AI-Tag-Tool.exe "C:\path\to\dataset"`.
+- Captions are read from the file with the same name as the image and the extension set in Settings > General (default `.txt`).
+- Subfolders are included by default. To load only the chosen folder, untick Settings > General > *Include subfolders when loading a dataset*.
+- **File > Recent folders** lists the last 5 folders you opened, and the program reopens the most recent one when it starts (unless you give it a folder on the command line).
+
+### Recent folders and privacy
+
+The recent-folders list is kept in `recent-folders.json` next to the program, in a separate file from `settings.json`, and nowhere else in the program. Nothing is written to the registry.
+
+- **File > Recent folders > Clear recent folders** overwrites that file with zeros, then with random bytes, and then deletes it.
+- Settings > UI > *Remember recent folders*: untick it to stop keeping the list at all (this also clears the stored list). *Reopen the last folder at startup* controls the startup behaviour on its own.
+
+This is best effort. Solid-state drives, NTFS journaling, backups and shadow copies can keep older copies of any file in places no program can reach. Separately, the Windows folder picker (File > Open folder) keeps its own per-program note of the last folder it showed, in the registry under `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\LastVisitedPidlMRU`; that belongs to Windows, not to this program.
+
+## Checking tags
+
+Type the tags you are reviewing for into **Check for**, separated by commas. Put `-` in front of a tag you do **not** want:
+
+```
+raymond-cole, beard, 1man, -watermark, -blurry
+```
+
+On every image, both boxes are coloured straight away:
+
+| You wrote | The image's caption... | Check for box | Tags box |
+|---|---|---|---|
+| `beard` | has `beard` | green | `beard` green |
+| `beard` | lacks `beard` | red | — |
+| `-watermark` | lacks `watermark` | green | — |
+| `-watermark` | has `watermark` | red | `watermark` red |
+
+Matching ignores upper/lower case, treats `_` and space as the same (`long_hair` = `long hair`), and ignores weights (`(beard:1.2)` = `beard`). The Check for list is remembered between sessions.
+
+## Editing tags
+
+Click into the tags line and edit it like any text. Your edit is applied to the image when you:
+
+- press **Enter** (Shift+Enter inserts a line break, for files with several captions on separate lines),
+- click somewhere else,
+- move to another image, or
+- save.
+
+Nothing is written to disk until you save (**Ctrl+S**, or File > Save all changes), as in the original program. When you select several images at once, the middle pane switches to the *Grid* tab, which edits the tags of all selected images together.
+
+## Keyboard shortcuts
+
+| Action | Default key | Works... |
+|---|---|---|
+| Next image | Space, or Right | when you are not typing in a text box |
+| Previous image | Backspace, or Left | when you are not typing in a text box |
+| First image / last image | Home / End | when you are not typing in a text box |
+| Next image | Alt+Right | anywhere, also while typing |
+| Previous image | Alt+Left | anywhere, also while typing |
+| Next image | PageDown | inside the tags or Check for box |
+| Previous image | PageUp | inside the tags or Check for box |
+| Leave the tags or Check for box | Esc | inside those boxes; Space then moves between images again |
+| Apply the tags line | Enter | in the tags box |
+| Undo / redo your typing | Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) | in the tags or Check for box |
+| Undo / redo a change to the tag list | Ctrl+Z / Ctrl+Shift+Z | outside the text boxes |
+| Save all changes | Ctrl+S | anywhere |
+
+Clicking the preview image moves the keyboard focus to the dataset, so Space and the arrow keys change images straight away.
+
+**Changing the keys:** all the navigation keys above are listed at the bottom of Settings > Hotkeys, next to the original program's shortcuts. Select a row and press the new key. The "works when..." rule belongs to the action, not the key: if you move *Next image* to `F`, `F` still types normally inside a text box.
+
+## At the start or end of the folder
+
+Going forward past the last image, or back past the first, does what Settings > UI > *Going past the first or last image* says:
+
+- **Loop round to the other end** (default).
+- **Stop at the first / last image.**
+- **Ask for another folder (like IrfanView):** a list of the current folder (selected, so pressing the same key again simply loops), the parent folder `(..)` and each subfolder, with how many images each holds.
+
+| Key in the folder list | Does |
+|---|---|
+| Space, Right, Backspace, Enter, or double-click | Use the highlighted folder |
+| Up / Down | Highlight another folder |
+| Left | List the folders one level up |
+| Esc | Cancel and stay where you are |
+
+So you can keep pressing Space (or Right) to go round the same folder again, or press Down to pick a subfolder and then Right to open it. Going backwards works the same way: Backspace at the first image asks, Backspace again wraps to the last image, and a folder chosen while going backwards opens on its last image.
+
+## Links
+
+- This project: https://github.com/djdarcy/Simple-AI-Tag-Tool
+- The original BooruDatasetTagManager: https://github.com/starik222/BooruDatasetTagManager

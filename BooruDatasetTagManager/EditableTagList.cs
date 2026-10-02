@@ -495,6 +495,41 @@ namespace BooruDatasetTagManager
             return toIndex;
         }
 
+        /// <summary>
+        /// Replace every tag in one undoable step (Dazzle comma text box).
+        /// Recorded as a Sort history entry, which already undoes to the old
+        /// list and redoes to the new one.
+        /// </summary>
+        public void ReplaceAll(IEnumerable<PromptParser.PromptItem> tags)
+        {
+            var h = new EditableTagHistory();
+            h.Index = 0;
+            h.Type = EditableTagHistory.HistoryType.Sort;
+            foreach (EditableTag c in List)
+            {
+                var clonedETag = (EditableTag)c.Clone();
+                clonedETag.Parent = null;
+                h.ClearedTags.Add(clonedETag);
+            }
+            isStoreHistory = false;
+            List.Clear();
+            foreach (var tag in tags)
+            {
+                int index = GetNextId();
+                var eTag = new EditableTag(index, tag.Text, index);
+                eTag.Weight = tag.Weight;
+                Add(eTag, false);
+            }
+            isStoreHistory = true;
+            foreach (EditableTag c in List)
+            {
+                var clonedETag = (EditableTag)c.Clone();
+                clonedETag.Parent = null;
+                h.AddedTags.Add(clonedETag);
+            }
+            AddHistory(h);
+        }
+
         public void Sort(int skipFirstCount = 0)
         {
             var h = new EditableTagHistory();

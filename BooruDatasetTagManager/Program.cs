@@ -20,8 +20,10 @@ namespace BooruDatasetTagManager
         /// Главная точка входа для приложения.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
+            if (args.Length > 0)
+                StartupFolder = args[0];
             PreloadDotnetDependenciesFromSubdirectoryManually();
             Application.EnableVisualStyles();
 #if NET5_0_OR_GREATER
@@ -30,6 +32,7 @@ namespace BooruDatasetTagManager
             Application.SetCompatibleTextRenderingDefault(false);
             AppPath = Application.StartupPath;
             Settings = new AppSettings(Application.StartupPath);
+            RecentFolders = new DazzleRecentFolders(Application.StartupPath);
             EditableTagListLocker = new SemaphoreSlim(1,1);
             ListChangeLocker = new object();
             TranslationLocker = new SemaphoreSlim(1, 1);
@@ -147,6 +150,12 @@ namespace BooruDatasetTagManager
         }
 
         public static string AppPath;
+
+        /// <summary>Dataset folder passed on the command line, opened at startup.</summary>
+        public static string StartupFolder;
+
+        /// <summary>Simple-AI-Tag-Tool: File > Recent folders.</summary>
+        public static DazzleRecentFolders RecentFolders;
 
         public static TranslationManager TransManager;
 

@@ -79,6 +79,20 @@ namespace BooruDatasetTagManager
             Items.Add(new HotkeyItem("BtnMenuGenTagsWithSetWindow", "Generate tags with AutoTagger (open settings window)", Keys.H, false, true, false));
             Items.Add(new HotkeyItem("toolStripPromptSortBtn", "Sort tags", Keys.Q, true, false, false));
             Items.Add(new HotkeyItem("BtnTagImageChecker", "Visual editor of the selected tag for selected images", Keys.T, false, true, false));
+
+            // Simple-AI-Tag-Tool image navigation. Handled by MainForm.DazzleNavigationKey,
+            // which applies each entry's rule (when not typing / anywhere / inside a text box).
+            Items.Add(new HotkeyItem("DazzleNextImage", "Next image (when not typing)", Keys.Space, false, false, false));
+            Items.Add(new HotkeyItem("DazzleNextImage2", "Next image, second key (when not typing)", Keys.Right, false, false, false));
+            Items.Add(new HotkeyItem("DazzlePrevImage", "Previous image (when not typing)", Keys.Back, false, false, false));
+            Items.Add(new HotkeyItem("DazzlePrevImage2", "Previous image, second key (when not typing)", Keys.Left, false, false, false));
+            Items.Add(new HotkeyItem("DazzleNextImageAnywhere", "Next image (anywhere, also while typing)", Keys.Right, false, false, true));
+            Items.Add(new HotkeyItem("DazzlePrevImageAnywhere", "Previous image (anywhere, also while typing)", Keys.Left, false, false, true));
+            Items.Add(new HotkeyItem("DazzleNextImageInBox", "Next image (inside the tags or check box)", Keys.PageDown, false, false, false));
+            Items.Add(new HotkeyItem("DazzlePrevImageInBox", "Previous image (inside the tags or check box)", Keys.PageUp, false, false, false));
+            Items.Add(new HotkeyItem("DazzleLeaveBox", "Leave the tags or check box", Keys.Escape, false, false, false));
+            Items.Add(new HotkeyItem("DazzleFirstImage", "First image (when not typing)", Keys.Home, false, false, false));
+            Items.Add(new HotkeyItem("DazzleLastImage", "Last image (when not typing)", Keys.End, false, false, false));
         }
 
         public void ChangeLanguage()

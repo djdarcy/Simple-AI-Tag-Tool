@@ -76,9 +76,15 @@ namespace BooruDatasetTagManager
             labelDelExt = new System.Windows.Forms.Label();
             tabUI = new Manina.Windows.Forms.Tab();
             checkBoxCacheImages = new System.Windows.Forms.CheckBox();
+            checkBoxIncludeSubfolders = new System.Windows.Forms.CheckBox();
+            checkBoxDazzleLayout = new System.Windows.Forms.CheckBox();
             labelPreviewLocation = new System.Windows.Forms.Label();
             labelColorScheme = new System.Windows.Forms.Label();
             comboBoxPreviewType = new System.Windows.Forms.ComboBox();
+            labelEndOfFolder = new System.Windows.Forms.Label();
+            comboBoxEndOfFolder = new System.Windows.Forms.ComboBox();
+            checkBoxRememberFolders = new System.Windows.Forms.CheckBox();
+            checkBoxReopenLastFolder = new System.Windows.Forms.CheckBox();
             comboBoxColorScheme = new System.Windows.Forms.ComboBox();
             tabTranslations = new Manina.Windows.Forms.Tab();
             tabInterrogator = new Manina.Windows.Forms.Tab();
@@ -185,6 +191,26 @@ namespace BooruDatasetTagManager
             AutoSortCheckBox.TabIndex = 10;
             AutoSortCheckBox.Text = "Auto sort when changing selections";
             AutoSortCheckBox.UseVisualStyleBackColor = true;
+            //
+            // checkBoxIncludeSubfolders
+            //
+            checkBoxIncludeSubfolders.AutoSize = true;
+            checkBoxIncludeSubfolders.Location = new System.Drawing.Point(330, 360);
+            checkBoxIncludeSubfolders.Name = "checkBoxIncludeSubfolders";
+            checkBoxIncludeSubfolders.Size = new System.Drawing.Size(250, 19);
+            checkBoxIncludeSubfolders.TabIndex = 11;
+            checkBoxIncludeSubfolders.Text = "Include subfolders when loading a dataset";
+            checkBoxIncludeSubfolders.UseVisualStyleBackColor = true;
+            //
+            // checkBoxDazzleLayout
+            //
+            checkBoxDazzleLayout.AutoSize = true;
+            checkBoxDazzleLayout.Location = new System.Drawing.Point(330, 330);
+            checkBoxDazzleLayout.Name = "checkBoxDazzleLayout";
+            checkBoxDazzleLayout.Size = new System.Drawing.Size(280, 19);
+            checkBoxDazzleLayout.TabIndex = 12;
+            checkBoxDazzleLayout.Text = "Preview | Tags | Dataset layout (needs restart)";
+            checkBoxDazzleLayout.UseVisualStyleBackColor = true;
             // 
             // CheckAskChange
             // 
@@ -494,6 +520,8 @@ namespace BooruDatasetTagManager
             // 
             tabGeneral.Controls.Add(checkBoxFixOnLoad);
             tabGeneral.Controls.Add(AutoSortCheckBox);
+            tabGeneral.Controls.Add(checkBoxIncludeSubfolders);
+            tabGeneral.Controls.Add(checkBoxDazzleLayout);
             tabGeneral.Controls.Add(LabelPreviewImageSize);
             tabGeneral.Controls.Add(CheckAskChange);
             tabGeneral.Controls.Add(numericUpDown1);
@@ -562,6 +590,10 @@ namespace BooruDatasetTagManager
             // tabUI
             // 
             tabUI.Controls.Add(checkBoxCacheImages);
+            tabUI.Controls.Add(labelEndOfFolder);
+            tabUI.Controls.Add(comboBoxEndOfFolder);
+            tabUI.Controls.Add(checkBoxRememberFolders);
+            tabUI.Controls.Add(checkBoxReopenLastFolder);
             tabUI.Controls.Add(labelPreviewLocation);
             tabUI.Controls.Add(labelColorScheme);
             tabUI.Controls.Add(LabelLanguage);
@@ -617,6 +649,44 @@ namespace BooruDatasetTagManager
             comboBoxPreviewType.Name = "comboBoxPreviewType";
             comboBoxPreviewType.Size = new System.Drawing.Size(254, 23);
             comboBoxPreviewType.TabIndex = 5;
+            //
+            // labelEndOfFolder
+            //
+            labelEndOfFolder.AutoSize = true;
+            labelEndOfFolder.Location = new System.Drawing.Point(9, 245);
+            labelEndOfFolder.Name = "labelEndOfFolder";
+            labelEndOfFolder.Size = new System.Drawing.Size(200, 15);
+            labelEndOfFolder.Text = "Going past the first or last image";
+            //
+            // comboBoxEndOfFolder
+            //
+            comboBoxEndOfFolder.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            comboBoxEndOfFolder.FormattingEnabled = true;
+            comboBoxEndOfFolder.Items.AddRange(new object[] { "Loop round to the other end", "Stop at the first / last image", "Ask for another folder (like IrfanView)" });
+            comboBoxEndOfFolder.Location = new System.Drawing.Point(230, 242);
+            comboBoxEndOfFolder.Name = "comboBoxEndOfFolder";
+            comboBoxEndOfFolder.Size = new System.Drawing.Size(254, 23);
+            comboBoxEndOfFolder.TabIndex = 8;
+            //
+            // checkBoxRememberFolders
+            //
+            checkBoxRememberFolders.AutoSize = true;
+            checkBoxRememberFolders.Location = new System.Drawing.Point(9, 280);
+            checkBoxRememberFolders.Name = "checkBoxRememberFolders";
+            checkBoxRememberFolders.Size = new System.Drawing.Size(420, 19);
+            checkBoxRememberFolders.TabIndex = 9;
+            checkBoxRememberFolders.Text = "Remember recent folders (File > Recent folders; turning this off clears the list)";
+            checkBoxRememberFolders.UseVisualStyleBackColor = true;
+            //
+            // checkBoxReopenLastFolder
+            //
+            checkBoxReopenLastFolder.AutoSize = true;
+            checkBoxReopenLastFolder.Location = new System.Drawing.Point(9, 305);
+            checkBoxReopenLastFolder.Name = "checkBoxReopenLastFolder";
+            checkBoxReopenLastFolder.Size = new System.Drawing.Size(300, 19);
+            checkBoxReopenLastFolder.TabIndex = 10;
+            checkBoxReopenLastFolder.Text = "Reopen the last folder at startup";
+            checkBoxReopenLastFolder.UseVisualStyleBackColor = true;
             // 
             // comboBoxColorScheme
             // 
@@ -866,7 +936,13 @@ namespace BooruDatasetTagManager
         private System.Windows.Forms.Label labelCaptionFileExt;
         private System.Windows.Forms.Label labelPreviewLocation;
         private System.Windows.Forms.ComboBox comboBoxPreviewType;
+        private System.Windows.Forms.Label labelEndOfFolder;
+        private System.Windows.Forms.ComboBox comboBoxEndOfFolder;
+        private System.Windows.Forms.CheckBox checkBoxRememberFolders;
+        private System.Windows.Forms.CheckBox checkBoxReopenLastFolder;
         private System.Windows.Forms.CheckBox checkBoxCacheImages;
+        private System.Windows.Forms.CheckBox checkBoxIncludeSubfolders;
+        private System.Windows.Forms.CheckBox checkBoxDazzleLayout;
         private Manina.Windows.Forms.Tab tabInterrogator;
         private System.Windows.Forms.TextBox textBoxAiApiEndpoint;
         private System.Windows.Forms.Label LabelApApiEndpoint;

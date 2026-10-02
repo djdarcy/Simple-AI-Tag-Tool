@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // Общие сведения об этой сборке предоставляются следующим набором
 // набора атрибутов. Измените значения этих атрибутов для изменения сведений,
 // связанных со сборкой.
-[assembly: AssemblyTitle("BooruDatasetTagManager")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Simple-AI-Tag-Tool")]
+[assembly: AssemblyDescription("Caption review tool based on BooruDatasetTagManager by starik222")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("BooruDatasetTagManager")]
+[assembly: AssemblyProduct("Simple-AI-Tag-Tool")]
 [assembly: AssemblyCopyright("Copyright ©  2022-2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номера сборки и редакции по умолчанию 
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.6.3")]
-[assembly: AssemblyFileVersion("2.6.3.0")]
+[assembly: AssemblyVersion("2.7.0")]
+[assembly: AssemblyFileVersion("2.7.0.0")]

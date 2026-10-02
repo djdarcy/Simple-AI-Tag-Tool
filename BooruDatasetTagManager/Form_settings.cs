@@ -48,8 +48,13 @@ namespace BooruDatasetTagManager
             CheckAskChange.Checked = Program.Settings.AskSaveChanges;
             checkBoxFixOnLoad.Checked = Program.Settings.FixTagsOnSaveLoad;
             AutoSortCheckBox.Checked = Program.Settings.AutoSort;
+            checkBoxIncludeSubfolders.Checked = Program.Settings.IncludeSubfolders;
+            checkBoxDazzleLayout.Checked = Program.Settings.DazzleLayout;
             //UI
             checkBoxCacheImages.Checked = Program.Settings.CacheOpenImages;
+            comboBoxEndOfFolder.SelectedIndex = (int)Program.Settings.DazzleEndOfFolder;
+            checkBoxRememberFolders.Checked = Program.Settings.DazzleRememberFolders;
+            checkBoxReopenLastFolder.Checked = Program.Settings.DazzleReopenLastFolder;
             numericUpDown3.Value = Program.Settings.GridViewRowHeight;
             label11.Text = Program.Settings.GridViewFont.ToString();
             gridFontSettings = Program.Settings.GridViewFont;
@@ -112,8 +117,15 @@ namespace BooruDatasetTagManager
             Program.Settings.CaptionFileExtensions = textBox4.Text;
             Program.Settings.AskSaveChanges = CheckAskChange.Checked;
             Program.Settings.AutoSort = AutoSortCheckBox.Checked;
+            Program.Settings.IncludeSubfolders = checkBoxIncludeSubfolders.Checked;
+            Program.Settings.DazzleLayout = checkBoxDazzleLayout.Checked;
             //UI
             Program.Settings.CacheOpenImages = checkBoxCacheImages.Checked;
+            Program.Settings.DazzleEndOfFolder = (EndOfFolderAction)Math.Max(0, comboBoxEndOfFolder.SelectedIndex);
+            Program.Settings.DazzleRememberFolders = checkBoxRememberFolders.Checked;
+            Program.Settings.DazzleReopenLastFolder = checkBoxReopenLastFolder.Checked;
+            if (!checkBoxRememberFolders.Checked)
+                Program.RecentFolders?.Clear(); // "don't remember" means forget what is already stored
             Program.Settings.GridViewRowHeight = (int)numericUpDown3.Value;
             Program.Settings.GridViewFont = gridFontSettings;
             Program.Settings.AutocompleteFont = autocompleteFontSettings;

@@ -75,6 +75,8 @@ namespace BooruDatasetTagManager
             gridViewAllTags.DefaultCellStyle.Font = Program.Settings.GridViewFont.GetFont();
             gridViewDS.DefaultCellStyle.Font = Program.Settings.GridViewFont.GetFont();
             //splitContainer2.SplitterDistance = Width / 3;
+            ApplyDazzleLayout();
+            AddHelpMenu();
             toolStrippromptFixedLengthComboBox.SelectedIndex = 0;
             if (!Program.Settings.FixTagsOnSaveLoad)
             {
@@ -86,6 +88,10 @@ namespace BooruDatasetTagManager
 #else
             debugToolStripMenuItem.Visible = true;
 #endif
+            AddRecentFoldersMenu();
+            string startupFolder = StartupFolderToOpen();
+            if (!string.IsNullOrEmpty(startupFolder) && Directory.Exists(startupFolder))
+                BeginInvoke(new Action(async () => await LoadFromFolderAsync(false, startupFolder)));
         }
 
         private void ContextMenuImageGridHeader_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
@@ -130,8 +136,9 @@ namespace BooruDatasetTagManager
             await LoadFromFolderAsync(true);
         }
 
-        private async Task LoadFromFolderAsync(bool useAdditionalSettings)
+        private async Task LoadFromFolderAsync(bool useAdditionalSettings, string folder = null)
         {
+            CommitTagsTextBox();
             if (Program.DataManager != null && Program.DataManager.IsDataSetChanged())
             {
                 DialogResult result = MessageBox.Show(I18n.GetText("TipDSChangeSaveText"), I18n.GetText("TipDSChangeSaveTitle"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
@@ -140,9 +147,13 @@ namespace BooruDatasetTagManager
                     Program.DataManager.SaveAll();
                 }
             }
-            OpenFolderDialog openFolderDialog = new OpenFolderDialog();
-            if (openFolderDialog.ShowDialog() != DialogResult.OK)
-                return;
+            if (folder == null)
+            {
+                OpenFolderDialog openFolderDialog = new OpenFolderDialog();
+                if (openFolderDialog.ShowDialog() != DialogResult.OK)
+                    return;
+                folder = openFolderDialog.Folder;
+            }
             bool loadPreviewImages = true;
             bool readMetadata = false;
             if (useAdditionalSettings)
@@ -171,13 +182,15 @@ namespace BooruDatasetTagManager
             TrackBarRowHeight.Value = Program.Settings.PreviewSize;
             TrackBarRowHeight.ValueChanged += TrackBarRowHeight_ValueChanged;
             //Program.DataManager.SetTranslationMode(isTranslate);
-            if (!await Program.DataManager.LoadFromFolderAsync(openFolderDialog.Folder, loadPreviewImages, readMetadata))
+            if (!await Program.DataManager.LoadFromFolderAsync(folder, loadPreviewImages, readMetadata))
             {
                 LockEdit(false);
                 SetStatus(I18n.GetText("TipFolderWrong"));
                 return;
             }
             gridViewDS.DataSource = Program.DataManager.GetDataSource();
+            dazzleDatasetFolder = folder;
+            RememberFolder(folder);
             isAllTags = true;
             toolStripLabelAllTags.Text = I18n.GetText("UILabelAllTags");
             gridViewAllTags.DataSource = Program.DataManager.AllTagsBindingSource;
@@ -311,6 +324,7 @@ namespace BooruDatasetTagManager
 
         private async void LoadSelectedImageToGrid()
         {
+            CommitTagsTextBox();
             gridViewTags.AutoGenerateColumns = false;
             if (gridViewDS.SelectedRows.Count == 0)
             {
@@ -324,6 +338,7 @@ namespace BooruDatasetTagManager
                 gridViewTags.Tag = (string)gridViewDS.SelectedRows[0].Cells["ImageFilePath"].Value;
                 ChageImageColumn(false);
                 gridViewTags.DataSource = Program.DataManager.DataSet[(string)gridViewDS.SelectedRows[0].Cells["ImageFilePath"].Value].Tags;
+                ShowTagsInTextBox((EditableTagList)gridViewTags.DataSource);
                 if (isShowPreview)
                 {
                     ShowPreview((string)gridViewDS.SelectedRows[0].Cells["ImageFilePath"].Value);
@@ -338,6 +353,7 @@ namespace BooruDatasetTagManager
                     HidePreview();
                 }
                 gridViewTags.DataSource = null;
+                ShowTagsInTextBox(null);
                 gridViewTags.AllowDrop = false;
                 gridViewTags.Rows.Clear();
                 ChageImageColumn(true);
@@ -634,6 +650,7 @@ namespace BooruDatasetTagManager
                 MessageBox.Show(I18n.GetText("TipDatasetNoLoad"));
                 return;
             }
+            CommitTagsTextBox();
             Program.DataManager.SaveAll();
             Program.DataManager.UpdateDatasetHash();
             SetStatus(I18n.GetText("StatusSaved"));
@@ -1070,6 +1087,8 @@ namespace BooruDatasetTagManager
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            CommitTagsTextBox();
+            SaveDazzleState();
             if (Program.DataManager != null && Program.DataManager.IsDataSetChanged())
             {
                 DialogResult result = MessageBox.Show(I18n.GetText("TipDSChangeSaveText"), I18n.GetText("TipDSChangeSaveTitle"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
@@ -1138,7 +1157,8 @@ namespace BooruDatasetTagManager
                         previewPicBox.Size = new Size(Program.Settings.PreviewSize, Program.Settings.PreviewSize);
                         previewPicBox.Image = dataItem.Img;
                         previewPicBox.SizeMode = PictureBoxSizeMode.AutoSize;
-                        previewPicBox.Location = new Point(splitContainer1.Panel2.Location.X + splitContainer2.Panel2.Location.X, PointToClient(Cursor.Position).Y);
+                        // float the hover preview over the tabs pane, wherever the layout put it
+                        previewPicBox.Location = new Point(PointToClient(tabControl1.PointToScreen(Point.Empty)).X, PointToClient(Cursor.Position).Y);
 
                         if (!this.Controls.ContainsKey("previewPicBox"))
                         {
@@ -1963,9 +1983,20 @@ namespace BooruDatasetTagManager
                 gridViewTags.BeginEdit(true);
                 return true;
             }
-            var hotkey = Program.Settings.Hotkeys.Items.Find(a => a.FullKeyData == keyData);
+            if (DazzleUndoKey(keyData) || DazzleNavigationKey(keyData, IsAutoRepeat(msg)))
+                return true;
+            // Dazzle* entries were already tried by DazzleNavigationKey; when it declined
+            // (e.g. Space while typing) the key belongs to the focused control.
+            var hotkey = Program.Settings.Hotkeys.Items.Find(a => a.FullKeyData == keyData && !a.Id.StartsWith("Dazzle"));
             if (hotkey != null)
             {
+                if (IsDazzleTextBoxFocused())
+                {
+                    // Ctrl+Z, Ctrl+V and friends edit the text, not the tag list
+                    if (IsTextEditingChord(keyData))
+                        return base.ProcessCmdKey(ref msg, keyData);
+                    CommitTagsTextBox();
+                }
                 Program.Settings.Hotkeys.Commands[hotkey.Id]();
                 return true;
             }
@@ -1980,7 +2011,10 @@ namespace BooruDatasetTagManager
 
         private void TagsFocus()
         {
-            gridViewTags.Focus();
+            if (tabsTags != null && tabsTags.SelectedTab == tabTagsText)
+                textBoxTags.Focus();
+            else
+                gridViewTags.Focus();
         }
 
         private void AllTagsFocus()
@@ -2000,26 +2034,50 @@ namespace BooruDatasetTagManager
             gridViewDS.Focus();
         }
 
+        // Panes are toggled by finding the SplitterPanel that currently holds them,
+        // so hide/show works in both the classic and the Dazzle layout.
+        private static bool IsPaneCollapsed(Control pane)
+        {
+            var sc = (SplitContainer)pane.Parent.Parent;
+            return pane.Parent == sc.Panel1 ? sc.Panel1Collapsed : sc.Panel2Collapsed;
+        }
+
+        private static void TogglePane(Control pane)
+        {
+            var sc = (SplitContainer)pane.Parent.Parent;
+            bool isPanel1 = pane.Parent == sc.Panel1;
+            bool collapse = !(isPanel1 ? sc.Panel1Collapsed : sc.Panel2Collapsed);
+            if (collapse && (isPanel1 ? sc.Panel2Collapsed : sc.Panel1Collapsed))
+            {
+                // never collapse both halves of one splitter: reveal the sibling first
+                if (isPanel1) sc.Panel2Collapsed = false; else sc.Panel1Collapsed = false;
+            }
+            if (isPanel1) sc.Panel1Collapsed = collapse; else sc.Panel2Collapsed = collapse;
+        }
+
+        private void UpdatePaneMenuChecks()
+        {
+            MenuHideAllTags.Checked = IsPaneCollapsed(tabControl1);
+            MenuHideTags.Checked = IsPaneCollapsed(TagsPane);
+            MenuHideDataset.Checked = IsPaneCollapsed(toolStripContainer3);
+        }
+
         private void HideShowAllTagsWindow()
         {
-            if (splitContainer2.Panel1Collapsed)
-                HideShowTagsWindow();
-            splitContainer2.Panel2Collapsed = !splitContainer2.Panel2Collapsed;
-            MenuHideAllTags.Checked = splitContainer2.Panel2Collapsed;
+            TogglePane(tabControl1);
+            UpdatePaneMenuChecks();
         }
 
         private void HideShowTagsWindow()
         {
-            if (splitContainer2.Panel2Collapsed)
-                HideShowAllTagsWindow();
-            splitContainer2.Panel1Collapsed = !splitContainer2.Panel1Collapsed;
-            MenuHideTags.Checked = splitContainer2.Panel1Collapsed;
+            TogglePane(TagsPane);
+            UpdatePaneMenuChecks();
         }
 
         private void HideShowDataset()
         {
-            splitContainer1.Panel1Collapsed = !splitContainer1.Panel1Collapsed;
-            MenuHideDataset.Checked = splitContainer1.Panel1Collapsed;
+            TogglePane(toolStripContainer3);
+            UpdatePaneMenuChecks();
         }
 
         #endregion

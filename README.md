@@ -1,138 +1,86 @@
-<div align="center">
+# Simple-AI-Tag-Tool
 
-**English** | [中文简体](./README_zh_CN.md) | [Português do Brasil](./docs/pt-BR/README_pt_BR.md)
+**A dataset refinement tool for LoRA and other image-training captions.** Step through your images one at a time, see each caption next to its image, and see at a glance which tags are there that you want, which are missing, and which shouldn't be there at all. Fix them as you go and save.
 
-</div>
+Simple-AI-Tag-Tool started as a fork of [BooruDatasetTagManager](https://github.com/starik222/BooruDatasetTagManager) by starik222, and it keeps everything that tool does. But it is built for a different job. BooruDatasetTagManager is centred on *creating* tags: generate them with an autotagger, tidy them up, done. Simple-AI-Tag-Tool is centred on *refining* them: going back over a dataset again and again until it really covers what you need it to cover.
 
-# BooruDatasetTagManager
-A simple tag editor for a dataset created for training hypernetworks, embeddings, lora, etc. You can create a dataset from scratch using only images, or you can use a program to edit a dataset created using automatic tagging ([wd14-tagger](https://github.com/toriato/stable-diffusion-webui-wd14-tagger), [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui), etc.)
-The editor is primarily intended for booru-style tagged data, but you can adapt it for other datasets as well. 
+## Why refinement needs its own tool
 
-Since version 2.5.0 the editor also supports video tagging.
+| | Tag creation (the original tool's focus) | Tag refinement (this tool's focus) |
+|---|---|---|
+| The question | "What tags does this image have?" | "Has this dataset been refined to cover the scenarios I care about?" |
+| The workflow | Generate, make a basic edit, done | Review, check, correct, and repeat, many times |
+| What you look at | The tag list | The *changes*: what is missing, what is wrong, what should not be there |
+| How you check | Read every caption | Tell the tool what you expect and let it colour the answer on every image |
+| What comes next | Training | Another refinement pass, by hand or with a local AI model |
 
-# Using
-You need a dataset like the following:
+When a caption is wrong, the cost shows up hours later in a training run. This tool's job is to make the problems visible *before* that, without opening each caption file and searching it by hand.
 
-*You can also specify a dataset without text files if you want to create tags from scratch. In this case, text files will be created on save.*
+## The review loop
 
-![](https://user-images.githubusercontent.com/1236582/198582869-be2938a7-f7b2-4ad9-8e8c-a53604a24c2d.jpg)
+1. **Open a dataset folder.** Each image's caption is read from the `.txt` file with the same name.
+2. **Say what you are checking for.** Type tags into the *Check for* box, for example `raymond-cole, beard, -watermark`. A `-` means "this tag should not be here".
+3. **Step through the images.** Space for the next image, Backspace for the previous one. On every image, each tag you are checking for turns **green** when it is as expected and **red** when it is missing or unwanted, in the check list and in the caption itself.
+4. **Fix the caption in place.** The caption is a single editable line, exactly as the file holds it.
+5. **Save, change what you are checking for, and go round again.**
 
+## What it does today (2.7.0)
 
-In the program, select "File->Load folder" and specify the directory with the dataset.
+- **Review layout:** image preview on the left, the check list and caption in the middle, the dataset list on the right.
+- **Captions as text:** each image's tags as one editable comma-separated line, with undo and redo. The original tag grid is one click away, and is used automatically when you select several images.
+- **Check for:** wanted and unwanted tags, coloured green or red on every image as it loads. Matching ignores upper/lower case, `_` versus space, and weights. The list is remembered between sessions.
+- **IrfanView-style navigation:** Space / Backspace / arrow keys, and Home / End for the first and last image, whenever you are not typing. All the keys can be changed in Settings > Hotkeys.
+- **Start and end of the folder:** loop round, stop, or (like IrfanView) be offered the current folder, its parent and its subfolders to continue in.
+- **Only this folder:** loading can include or skip subfolders.
+- **Recent folders:** the last five folders are listed in the File menu, the last one reopens at startup, and clearing the list overwrites the stored file before deleting it.
+- **Help menu:** the user guide, keyboard shortcuts, and links to this project and the original.
 
-![](https://github.com/starik222/BooruDatasetTagManager/assets/1236582/4d5a1a31-5909-4706-a3d1-980f82d58c6a)
+The [user guide](docs/simple-ai-tag-tool/guide.md) explains each of these, with the full shortcut list.
 
-The left pane displays images from the dataset. The central panel displays tags for the selected images, which you can edit. The right panel has two tabs. The first tab displays all (or common) tags present in the dataset. In the second tab you can generate tags using the built-in service (interrogator_rpc).
+## Where it is going
 
-After editing, you will select "File->Save all changes".
+- **Conditional checks:** rules such as "a birth date in May means the `May` tag should be present", with a date or pattern deciding when a tag is required, and a tag flagged when its condition is not met.
+- **Templates:** a named set of tags (a character, a style, a setting) that can be added to a caption in one step, with its tags coloured present or missing on every image.
+- **A local AI refinement pass (LM Studio):** a "play" button that sends the image, its caption, your checks and a written instruction to a local vision model. Its proposed caption appears beside the current one as a diff, and you choose what to keep, change by change. Nothing is written until you accept it.
+- **Zoom, pan and selection in the preview**, IrfanView-style, with the image's size, depth, position in the folder, zoom, file size and date in the title and status bar.
 
-You can select multiple images at once in a dataset. This will allow you to easily edit tags for images of the same type.
+## Getting started
 
-![bdtm03](https://github.com/starik222/BooruDatasetTagManager/assets/1236582/72a450dd-93d9-4cef-9a73-8460c77e9b7d)
+**Requirements:** Windows, the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), and Git.
 
-Through the "Setting" menu, you can open the settings window to customize the application for yourself. Users who have Google Translate blocked can change the translation service to Chinese. On the "UI" tab, you can select a color scheme, and on the "Hotkeys" tab, configure the key layout that is convenient for you.
-
-![bdtm04](https://github.com/starik222/BooruDatasetTagManager/assets/1236582/2adb081f-b11c-480e-b137-1cb801d0474f)
-
-# Tag translation
-
-Before using tag translation, you need to select the translation language and translation service in the settings.
-From the "view" menu, select "Translate tags" to display columns with translated values. When displaying columns, all tags will be automatically translated into the language you selected. The translation is saved in the "Translations" folder with the name of the selected language. You can manually edit the translation in this file as the translation is taken from this file first. Manual translation is recommended to be marked with the "*" symbol.
-
-Translation file example:
-```bash
-//Translation format: <original>=<translation>
-black hair=÷åðíûå âîëîñû
-*solo=Ñîëî
-1girl=1 äåâóøêà
+```
+git clone https://github.com/djdarcy/Simple-AI-Tag-Tool.git
+cd Simple-AI-Tag-Tool
+git switch dazzle
+build.cmd run "C:\path\to\your\dataset"
 ```
 
-Currently, the manual translation filter can only be used in tag autocompletion (with the option enabled in the settings). But in the future, it can be used somewhere else.
+- `build.cmd` builds the program, `build.cmd run` also starts it, and `build.cmd run "<folder>"` opens that dataset. The program is `BooruDatasetTagManager\bin\Debug\net8.0-windows\Simple-AI-Tag-Tool.exe`.
+- The first build also clones and builds [ScreenLister](https://github.com/starik222/ScreenLister) next to this repository. The original tool uses it to take frames from videos. Images work without its native part; video previews need it.
+- To build by hand instead: clone ScreenLister next to this repository so the two folders sit side by side, build `ScreenLister/ScreenList/ScreenListerNET.csproj` in Release, then build `BooruDatasetTagManager.sln`.
 
-# Tag list for autocomplete
+## Everything from BooruDatasetTagManager is still here
 
-The application supports loading tags from csv files of the format used in "[Booru tag autocompletion for A1111](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)". You can also create your own txt files with a list of tags (line by line). But since loading data from these files takes a long time, the program converts them to its own format and loads data from it. Therefore, if you change the list of tags, be prepared to wait quite a long time. All files with tags are located in the "Tags" folder.
+All of the original tool's features keep working and are documented in [its README](docs/upstream/BooruDatasetTagManager-README.md):
 
-# AutoTagger (AiApiServer)
+- the AutoTagger (AiApiServer) for generating tags with local models;
+- tag translation;
+- tag lists for autocomplete;
+- multi-image editing in the tag grid;
+- weighted tags;
+- colour schemes;
+- interface translations;
+- background replacement.
 
-You can generate tags for images directly in the program. To do this, you need to configure and run the "AiApiServer" service. Python must be installed for it to work.
-To configure AiApiServer, run the command:
-```bash
-pip install -r requirements.txt
-```
-Since the latest version of onnxruntime requires msvc runtime 2015 version, it is recommended to install this package.
-If you use anaconda:
-```bash
-conda install conda-forge::vs2015_runtime
-```
-If you install it normally with pip:
-```bash
-pip install msvc-runtime
-```
-To start the service run
-```bash
-python main.py
-```
-If you have problems running a service in pure python, try using [anaconda](https://www.anaconda.com/download) or [miniconda](https://docs.conda.io/projects/miniconda/en/latest/).
+To go back to the original window layout, untick Settings > General > *Preview | Tags | Dataset layout* and restart.
 
-After installing anaconda, run the console, create a new conda environment and install the necessary dependencies.
-```bash
-#Creating new environment with python
-conda create -n bdtm python=3.12.9
-#Activating the created environment
-conda activate bdtm
-#Installing the necessary dependencies.
-pip install -r requirements.txt
-#Run service
-python main.py
-```
-To start an already configured service, you need to launch the console and run the following commands
-```bash
-conda activate bdtm
-python main.py
-```
-After launching the service, in the editor itself you can generate tags for all images using the "Tools" menu, generate tags for selected images using ![](https://github.com/starik222/BooruDatasetTagManager/assets/1236582/230f47f9-5cef-49bc-8b44-a67890433c42) icon, and also generate tags in a separate tab "AutoTagger preview window". To configure generation parameters, you can use the corresponding generation menu item, or the "Settings" -> "Auto tagger settings..." menu.
+## Branches
 
-![bdtm06](https://github.com/user-attachments/assets/5bcc14c8-b505-4e58-9d76-7910f4b40c84)
+- `dazzle`: Simple-AI-Tag-Tool's development.
+- `master`: an unchanged mirror of upstream BooruDatasetTagManager. Internal code names (namespace, project and solution files) are deliberately left as they were, so fixes from upstream can still be pulled in.
 
-The generator allows you to select several models at once and specify a method for combining the results.
+## Credits and license
 
-# AiApiServer problems
+Simple-AI-Tag-Tool is based on [BooruDatasetTagManager](https://github.com/starik222/BooruDatasetTagManager) by starik222, used under the MIT License; the original copyright notice is kept in [LICENSE](LICENSE). Simple-AI-Tag-Tool's own additions are released under the same license.
 
-At the moment, the latest version of transformers that Florence2 models work with is 4.49.0. So if you want to use Florence2 models you need to downgrade transformers by running `pip install transformers==4.49.0 --upgrade`, but this may break other models, so choose for yourself what you need.
-
-The `briaai/RMBG-2.0` model (the background removal model) also doesn't work with the latest versions of transformers, so use the `BiRefNet` models instead.
-
-Model `Kwai-Keye/Keye-VL-1_5-8B` requires `Flash Attention 2` and `triton`. If you are using Windows, then you will encounter the problem that Flash Attention does not install on Windows, and it needs to be manually builded for your computer configuration. You can use [this article](https://github.com/Dao-AILab/flash-attention/issues/1469), or look for ready-made builds for your configuration. If you are using python 3.12+ and a blackwell 2.0 (rtx 50), ada (rtx 40) or ampere (rtx 30) video card, you can try installing [this build](https://huggingface.co/Panchovix/flash-attentionv2-blackwell2.0-nightly/tree/main).
-
-To install triton, run the command `pip install triton-windows`.
-
-# Weighted tags
-
-The editor supports working with weighted tags. When loading tags, brackets are automatically converted to weights. To change the weight of a tag, you need to select it and move the "weight" track bar to the required number of positions. One position equals one bracket.
-
-# Color scheme
-
-Currently, the program offers two color schemes (Classic and Dark). You can create or change the color scheme yourself. There is no window-based color scheme editor yet, but you can open the ColorScheme.json file using a text editor and make the necessary changes.
-
-# Interface translation
-
-All language files are located in the `Languages` ​​folder. You can translate the application interface into the language you are interested in. To do this, you need to copy any `xx-XX.txt` file you like, rename it according to your [language code](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oe376/6c085406-a698-4e12-9d4d-c3b0ee3dbc4a) and translate the contents after the `=` sign. You can create a topic in Issues or discussions and attach your translation. I will include your translation in the next release.
-
-# Dependencies
-
-- [ScreenLister](https://github.com/starik222/ScreenLister) - Used to obtain images from videos.
-
-# Build
-
-This is a tool designed in C and you will need to run it in Visual Studio (not Visual Studio Code). Steps to achieve this are:
-1. Download [visual Studio](https://visualstudio.microsoft.com/downloads/)
-2. Clone this repo into a folder somewhere on your computer
-3. Open the repo using Visual Studio: `File` > `Open` > `Project/Solution` > select the `BooruDatasetTagManager.sln` file
-4. Build the solution by selecting `Build` > `Build Solution` from the menu (or by pressing Ctrl+Shift+B.
-Run the Application)
-
-# Other
-
-Using the "View" menu you can hide panels you don't need.
-In the "Tools" menu there is a function to automatically replace the transparent background with the color you need.
+Changes between versions are listed in the [CHANGELOG](CHANGELOG.md).

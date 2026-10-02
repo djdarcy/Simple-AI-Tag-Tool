@@ -56,6 +56,12 @@ namespace BooruDatasetTagManager
         public string ColorScheme { get; set; } = "Classic";
 
         public bool CacheOpenImages { get; set; } = true;
+        public bool IncludeSubfolders { get; set; } = true;
+        public bool DazzleLayout { get; set; } = true;
+        public string DazzleCheckText { get; set; } = "";
+        public EndOfFolderAction DazzleEndOfFolder { get; set; } = EndOfFolderAction.Loop;
+        public bool DazzleRememberFolders { get; set; } = true;
+        public bool DazzleReopenLastFolder { get; set; } = true;
 
         public bool LoadSettingsLoadPreviewImages { get; set; } = true;
         public bool LoadSettingsReadMetadata { get; set; } = false;
@@ -125,6 +131,12 @@ namespace BooruDatasetTagManager
                 CaptionFileExtensions = tempSettings.CaptionFileExtensions;
                 TagImagesGridSize = tempSettings.TagImagesGridSize;
                 CacheOpenImages = tempSettings.CacheOpenImages;
+                IncludeSubfolders = tempSettings.IncludeSubfolders;
+                DazzleLayout = tempSettings.DazzleLayout;
+                DazzleCheckText = tempSettings.DazzleCheckText ?? "";
+                DazzleEndOfFolder = tempSettings.DazzleEndOfFolder;
+                DazzleRememberFolders = tempSettings.DazzleRememberFolders;
+                DazzleReopenLastFolder = tempSettings.DazzleReopenLastFolder;
                 LoadSettingsLoadPreviewImages = tempSettings.LoadSettingsLoadPreviewImages;
                 LoadSettingsReadMetadata = tempSettings.LoadSettingsReadMetadata;
                 if (!string.IsNullOrEmpty(tempSettings.ColorScheme))

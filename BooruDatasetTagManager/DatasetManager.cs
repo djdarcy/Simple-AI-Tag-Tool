@@ -283,7 +283,8 @@ namespace BooruDatasetTagManager
             List<string> allowedExt = new List<string>();
             allowedExt.AddRange(Extensions.ImageExtensions);
             allowedExt.AddRange(Extensions.VideoExtensions);
-            string[] imgs = Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories);
+            var searchOption = Program.Settings.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+            string[] imgs = Directory.GetFiles(folder, "*.*", searchOption);
             if (imgs.Length == 0)
             {
                 return false;

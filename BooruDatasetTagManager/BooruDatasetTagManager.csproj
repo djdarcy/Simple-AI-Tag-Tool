@@ -2,6 +2,9 @@
   <PropertyGroup>
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
     <OutputType>WinExe</OutputType>
+    <!-- Simple-AI-Tag-Tool fork: exe name only; RootNamespace stays BooruDatasetTagManager so upstream merges stay clean -->
+    <AssemblyName>Simple-AI-Tag-Tool</AssemblyName>
+    <RootNamespace>BooruDatasetTagManager</RootNamespace>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
