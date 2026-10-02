@@ -20,6 +20,8 @@ To go back to the original layout, untick Settings > General > *Preview \| Tags 
 - **File > Open folder**, or start the program with a folder: `Simple-AI-Tag-Tool.exe "C:\path\to\dataset"`.
 - Captions are read from the file with the same name as the image and the extension set in Settings > General (default `.txt`).
 - Subfolders are included by default. To load only the chosen folder, untick Settings > General > *Include subfolders when loading a dataset*.
+- The **folder bar** above the dataset list shows where you are relative to the folder you opened (`testdata\sub`), with **Root** (back to that folder), **Up** (its parent) and **Subfolders**, a list of the current folder's subfolders with their image counts; click one to load it. Opening a folder any other way starts a new root.
+- In the dataset list, the **Path** column shows each image's folder relative to the loaded one: `.` for the folder itself, `.\sub` for a subfolder. The file name is in the Name column; hover the path cell for the full path.
 - **File > Recent folders** lists the last 5 folders you opened, and the program reopens the most recent one when it starts (unless you give it a folder on the command line).
 
 ### Recent folders and privacy

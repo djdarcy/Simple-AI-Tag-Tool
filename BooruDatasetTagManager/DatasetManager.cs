@@ -289,8 +289,9 @@ namespace BooruDatasetTagManager
             List<string> allowedExt = new List<string>();
             allowedExt.AddRange(Extensions.ImageExtensions);
             allowedExt.AddRange(Extensions.VideoExtensions);
-            var searchOption = Program.Settings.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-            string[] imgs = Directory.GetFiles(folder, "*.*", searchOption);
+            // IgnoreInaccessible: a folder we cannot enter (a junction such as "Application Data") is skipped instead of aborting the whole load.
+            var enumOptions = new EnumerationOptions { RecurseSubdirectories = Program.Settings.IncludeSubfolders, IgnoreInaccessible = true, AttributesToSkip = 0 };
+            string[] imgs = Directory.GetFiles(folder, "*.*", enumOptions);
             if (imgs.Length == 0)
             {
                 return false;

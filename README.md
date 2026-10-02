@@ -24,7 +24,7 @@ When a caption is wrong, the cost shows up hours later in a training run. This t
 4. **Fix the caption in place.** The caption is a single editable line, exactly as the file holds it.
 5. **Save, change what you are checking for, and go round again.**
 
-## What it does today (2.10.0)
+## What it does today (2.11.0)
 
 - **Review layout:** image preview on the left, the check list and caption in the middle, the dataset list on the right.
 - **Captions as text:** each image's tags as one editable comma-separated line, with undo and redo. The original tag grid is one click away, and is used automatically when you select several images.
@@ -33,6 +33,7 @@ When a caption is wrong, the cost shows up hours later in a training run. This t
 - **IrfanView-style navigation:** Space / Backspace / arrow keys, and Home / End for the first and last image, whenever you are not typing. All the keys can be changed in Settings > Hotkeys.
 - **Start and end of the folder:** loop round, stop, or (like IrfanView) be offered the current folder, its parent and its subfolders to continue in.
 - **Only this folder:** loading can include or skip subfolders.
+- **Folder bar:** above the dataset list, Root / Up / Subfolders (with image counts) and where you are relative to the folder you opened; the list's Path column shows each image's folder as `.` or `.\sub`.
 - **Recent folders:** the last five folders are listed in the File menu, the last one reopens at startup, and clearing the list overwrites the stored file before deleting it.
 - **Help menu:** the user guide, keyboard shortcuts, and links to this project and the original.
 - **Zoom, pan and select in the preview, IrfanView-style:** wheel to zoom, drag a rectangle that stays and can be resized or moved, click inside it to zoom to it, right-drag to pan, double-click to fit; `+` / `-` / `0` / `1` on the keyboard. The title bar shows the zoom and the selection's position, size and ratio.

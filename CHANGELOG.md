@@ -4,6 +4,20 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.11.0] - 2026-10-02
+
+### Added
+
+- **Explorer mode for the Dataset pane:** a folder bar shows the loaded folder relative to the one you opened, with Root, Up and a Subfolders list (each with its image count); clicking one loads that folder. The Browse-folders dialog remains the keyboard route.
+
+### Changed
+
+- The dataset list's path column is headed **Path** and shows the image's folder relative to the loaded one (`.` or `.\sub`) instead of the full path; the full path is in the cell's tooltip. The Name and Path columns use a slightly smaller font so the list needs less width.
+
+### Fixed
+
+- Loading a folder whose subtree contains a directory the program cannot enter (for example the `Application Data` junction in a user profile) no longer crashes with "Access to the path ... is denied"; the inaccessible directory is skipped. A failure while navigating from the folder bar now shows a message instead of the crash dialog.
+
 ## [2.10.0] - 2026-10-02
 
 ### Added

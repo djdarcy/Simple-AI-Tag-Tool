@@ -64,6 +64,7 @@ namespace BooruDatasetTagManager
             BuildTagsTextPane();
             splitContainer2.Panel1.Controls.Add(splitMiddle);
             BuildInfoPane();
+            BuildExplorerBar();
             // A picture box cannot take focus, so clicking the preview used to leave
             // focus (and Space) in the tags box. Send it to the dataset list instead.
             pictureBoxPreview.MouseDown += (s, e) => gridViewDS.Focus();

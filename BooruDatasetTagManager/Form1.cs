@@ -193,6 +193,7 @@ namespace BooruDatasetTagManager
             dazzleDatasetFolder = folder;
             RememberFolder(folder);
             LoadFolderRules(folder);
+            UpdateExplorerBar(folder);
             RenderInfoPane(); // the first image was shown while the list was still filling: its position row needs the final count
             isAllTags = true;
             toolStripLabelAllTags.Text = I18n.GetText("UILabelAllTags");
