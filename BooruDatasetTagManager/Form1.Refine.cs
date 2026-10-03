@@ -86,6 +86,7 @@ namespace BooruDatasetTagManager
             modeStrip.MouseUp += (s, e) => gridViewDS.Focus();
             BuildRefinePane();
             BuildChatPane();
+            BuildContextControls();   // Settings > AI's context, on both strips (Form1.AiSettings.cs)
             panelMiddleTop.Controls.Add(panelChat);
             panelMiddleTop.Controls.Add(panelRefine);
             panelMiddleTop.Controls.Add(reviewPane);
@@ -392,12 +393,17 @@ namespace BooruDatasetTagManager
         {
             try
             {
-                Directory.CreateDirectory(DazzleData.HouseSkillsFolder(RefineKind));
-                if (!DazzleData.SkillFiles(RefineKind, true).Any())
+                // with the shipped skills hidden, none is written anywhere (#6)
+                if (Program.Settings.DazzleShowHouseSkills && !DazzleData.SkillFiles(RefineKind, true).Any())
+                {
+                    Directory.CreateDirectory(DazzleData.HouseSkillsFolder(RefineKind));
                     WriteDefaultSkills();
+                }
             }
             catch (Exception e) { labelRefineStatus.Text = "skills folder: " + e.Message; }
-            string keep = select ?? lastSkillName ?? Program.Settings.DazzleRefineSkill;
+            // the default skill (Settings > AI) when the pane first opens; afterwards the one in use stays
+            string startWith = Program.Settings.DazzleRefineDefaultSkill.Length > 0 ? Program.Settings.DazzleRefineDefaultSkill : Program.Settings.DazzleRefineSkill;
+            string keep = select ?? lastSkillName ?? startWith;
             comboSkills.SelectedIndexChanged -= SkillsSelectionChanged;
             try
             {
@@ -522,6 +528,8 @@ namespace BooruDatasetTagManager
                 // becomes the person's choice on Settings > AI, or a placeholder the skill places itself.
                 var user = new StringBuilder();
                 user.Append("Current caption:\n").Append(leftCaption.Length > 0 ? leftCaption : "(none)");
+                string context = RefineContextBlock();   // only what the person chose (Settings > AI, or the strip's Context)
+                if (context.Length > 0) user.Append("\n\n").Append(context);
                 var req = new DazzleLmStudio.Request
                 {
                     Model = probe.Model, SystemPrompt = instruction + OutputContract, UserText = user.ToString(),
@@ -721,7 +729,7 @@ namespace BooruDatasetTagManager
                 var strip = new ToolStrip { GripStyle = ToolStripGripStyle.Hidden, Dock = DockStyle.Top };
                 strip.Items.Add(new ToolStripButton("Copy all", null, (s, e) => { if (logBox.TextLength > 0) Clipboard.SetText(logBox.Text); }));
                 strip.Items.Add(new ToolStripButton("Clear", null, (s, e) => { refineLog.Clear(); logBox.Clear(); }));
-                strip.Items.Add(new ToolStripLabel("server: " + DazzleLmStudio.NormalizeEndpoint(Program.Settings.OpenAiAutoTagger.ConnectionAddress) + "  (Settings > AutoTagger > OpenAI for the address, key, model and timeout)"));
+                strip.Items.Add(new ToolStripLabel("server: " + DazzleLmStudio.NormalizeEndpoint(Program.Settings.OpenAiAutoTagger.ConnectionAddress) + "  (Settings > AI for the address, key, model and timeout)"));
                 logForm.Controls.Add(logBox); logForm.Controls.Add(strip);
                 logForm.Show(this);
             }

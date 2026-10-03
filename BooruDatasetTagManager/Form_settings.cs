@@ -99,6 +99,7 @@ namespace BooruDatasetTagManager
             textBoxOpenApiEndpoint.Text = Program.Settings.OpenAiAutoTagger.ConnectionAddress;
             textBoxOpenAiApiKey.Text = Program.Settings.OpenAiAutoTagger.ApiKey;
             numericUpDownOpenAiTimeout.Value = Program.Settings.OpenAiAutoTagger.RequestTimeout;
+            BuildAiTab();   // Simple-AI-Tag-Tool: Settings > AI (Form_settings.Ai.cs)
 
             SwitchLanguage();
 
@@ -197,6 +198,7 @@ namespace BooruDatasetTagManager
                 catch { }
             }
 
+            SaveAiTab();   // Simple-AI-Tag-Tool: Settings > AI (Form_settings.Ai.cs)
             Program.Settings.SaveSettings();
             DialogResult = DialogResult.OK;
         }

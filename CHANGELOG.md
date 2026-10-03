@@ -4,6 +4,30 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.14.1] - 2026-10-02
+
+### Added
+
+- **Settings > AI**, one page for how AI Refine and AI Chat behave:
+  - **Server:** names the server and the model in use, with a **Test** that says the model, its context length and whether it sees images.
+  - **Requests:** token budget, temperature and image size, moved from the UI tab, plus the Think and JSON-reply defaults.
+  - **Defaults:** the skill each mode starts with, Chat's tools and ask-first defaults, and the share of context at which Chat drops its oldest turns.
+  - **Skills:** your skills folder, and whether the shipped skills are listed.
+  - **Data:** where data lives, and where per-image files go.
+  - **Context:** what context goes with each request.
+- The **OpenAI settings** block on Settings > AiApiServer gains a **Model** list (**Load list** marks the loaded one) and a **Test** button. The server stays configured in this one place.
+- **Context** dropdowns on the AI Refine and AI Chat strips send the folder's rules or the Check for list for this session. Settings > AI can make either go every time; all are off by default. Each piece goes with an editable framing sentence that tells the model what it is.
+- Under each AI instruction, a line says what will be sent besides the image, the skill and the caption. A piece the skill places itself with `{rules}` or `{checks}` is not added twice.
+- **Portable** can be switched on Settings > AI, and takes effect when you save. The settings in use are written to the new place, a settings file already there is kept as a dated copy, and the recent folders follow.
+- Changing where per-image files go moves the open dataset's files after asking, keeping their timestamps and overwriting nothing.
+- Settings reopens on the tab used last.
+- `SATT_HOME` and `SATT_DOCUMENTS` choose other folders for the data and Documents layers.
+
+### Changed
+
+- With the shipped skills hidden, their defaults are no longer written to the program folder.
+- AI Chat's oldest-turn trimming follows the setting instead of a fixed 75 %.
+
 ## [2.14.0] - 2026-10-02
 
 ### Added

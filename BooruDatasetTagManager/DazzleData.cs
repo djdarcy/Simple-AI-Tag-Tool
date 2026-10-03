@@ -32,13 +32,28 @@ namespace BooruDatasetTagManager
 
         private static readonly string[] Subfolders = { @"skills\refine", @"skills\chat", "conversations", "logs" };
 
+        /// <summary>SATT_HOME / SATT_DOCUMENTS override the two profile folders: a data location of the person's choosing, and how probes switch bases without touching the real profile.</summary>
+        public static string HomeRoot => Env("SATT_HOME") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), HomeDirName);
+        public static string DocumentsRoot => Env("SATT_DOCUMENTS") ?? Path.Combine(DocumentsFolder(), DocumentsDirName);
+        private static string Env(string name) { string v = Environment.GetEnvironmentVariable(name); return string.IsNullOrWhiteSpace(v) ? null : v.Trim(); }
+        private static string DocumentsFolder()
+        {
+            string d = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            return string.IsNullOrEmpty(d) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Documents") : d;
+        }
+
         /// <summary>Call once before AppSettings is built. Never throws: what could not be done is a note.</summary>
         public static void Initialize(string appFolder)
         {
             AppFolder = appFolder;
+            Build(null);
+        }
+
+        private static void Build(bool? portable)
+        {
             try
             {
-                Layout = new DataLayout(appFolder, HomeDirName, DocumentsDirName);
+                Layout = new DataLayout(AppFolder, HomeRoot, DocumentsRoot, portable, true);
                 Layout.EnsureFirstRun(Subfolders, profileFolders: !Layout.IsPortable);   // a portable run creates nothing outside its own folder
                 Layout.SettingsFile();                                              // seeds the base's settings.json once from the other base
                 Layout.Stack.SeedWritePath("recent-folders.json", out _);
@@ -46,10 +61,53 @@ namespace BooruDatasetTagManager
             catch (Exception e)
             {
                 // the layout could not be built at all (an unwritable profile?): fall back to beside the exe, as before 2.14
-                Layout = new DataLayout(appFolder, HomeDirName, DocumentsDirName, portable: true);
+                Layout = new DataLayout(AppFolder, HomeRoot, DocumentsRoot, true, true);
                 Layout.Notes.Add("data folders unavailable, using the program folder: " + e.Message);
             }
         }
+
+        /// <summary>
+        /// Switch the base live (the person, 2026-10-02: "Live"): portable on writes the "portable" marker beside the exe,
+        /// off removes it; the layout is rebuilt; the running settings are written to the new base, a settings file already
+        /// there kept beside it as settings.before-switch-<time>.json; the recent folders follow. Returns one line per
+        /// thing done or refused, for the status line and the log; never throws.
+        /// </summary>
+        public static List<string> SwitchBase(bool portable, AppSettings settings, DazzleRecentFolders recent)
+        {
+            var lines = new List<string>();
+            if (portable == IsPortable) return lines;
+            string marker = Path.Combine(AppFolder, DataLayout.PortableMarkers[0]);
+            try
+            {
+                if (portable) File.WriteAllText(marker, "Simple-AI-Tag-Tool runs portable while this file is here: settings, recent folders, skills and conversations stay beside the program.\r\n");
+                else foreach (var m in DataLayout.PortableMarkers) { string p = Path.Combine(AppFolder, m); if (File.Exists(p)) File.Delete(p); }
+            }
+            catch (Exception e) { lines.Add("could not " + (portable ? "write" : "remove") + " the portable marker in " + AppFolder + ": " + e.Message); return lines; }
+            Build(portable);
+            lines.AddRange(Notes);
+            try
+            {
+                string target = Path.Combine(BaseFolder, "settings.json");
+                if (File.Exists(target))
+                {
+                    string kept = Path.Combine(BaseFolder, "settings.before-switch-" + DateTime.Now.ToString("yyyy-MM-dd__HH-mm-ss") + ".json");
+                    File.Copy(target, kept);
+                    lines.Add("kept the settings already in " + BaseFolder + " as " + Path.GetFileName(kept));
+                }
+                settings.DazzleRetarget(BaseFolder);
+                settings.SaveSettings();
+                recent?.Retarget(BaseFolder);
+                lines.Add("now " + (portable ? "portable" : "installed") + ": settings and recent folders live in " + BaseFolder);
+            }
+            catch (Exception e) { lines.Add("could not move the settings to " + BaseFolder + ": " + e.Message); }
+            return lines;
+        }
+
+        /// <summary>The kinds of per-image file the store holds; Migrate moves each.</summary>
+        public static readonly string[] ItemKinds = { "chat", "refine", "rules" };
+
+        /// <summary>The per-image store's three choices, as Settings > AI shows them.</summary>
+        public static readonly string[] StoreChoices = { "Beside each image (sidecar)", "In the dataset's .satt folder", "In the program's data store" };
 
         // ------------------------------------------------------------ skills
 

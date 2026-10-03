@@ -21,7 +21,21 @@ namespace BooruDatasetTagManager
     {
         public const int MaxCount = 5;
 
-        private readonly string path;
+        private string path;
+
+        /// <summary>The data base moved (Settings > AI, portable on or off): keep the list in the new folder. A list already there is kept and merged after this one.</summary>
+        public void Retarget(string dir)
+        {
+            string target = Path.Combine(dir, "recent-folders.json");
+            if (string.Equals(Path.GetFullPath(target), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase)) return;
+            var mine = new List<string>(folders);
+            path = target;
+            folders = new List<string>();
+            Load();
+            foreach (var f in Enumerable.Reverse(mine)) { folders.RemoveAll(x => string.Equals(x, f, StringComparison.OrdinalIgnoreCase)); folders.Insert(0, f); }
+            if (folders.Count > MaxCount) folders.RemoveRange(MaxCount, folders.Count - MaxCount);
+            try { Directory.CreateDirectory(dir); Save(); } catch (Exception) { }
+        }
         private List<string> folders = new List<string>();
 
         public DazzleRecentFolders(string appDir)

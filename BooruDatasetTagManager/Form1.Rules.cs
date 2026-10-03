@@ -107,6 +107,7 @@ namespace BooruDatasetTagManager
             folderRules = rules;
             FillRulesGrid();
             rulesDirty = false;
+            UpdateContextLines();
             labelRules.Text = RulesHint(rules.Count(r => !r.IsEmpty && !r.IsComment), note);
         }
 
@@ -165,6 +166,7 @@ namespace BooruDatasetTagManager
             }
             folderRules = rules;
             rulesDirty = true;
+            UpdateContextLines();
             labelRules.Text = RulesHint(rules.Count(r => !r.IsEmpty && !r.IsComment), "  (unsaved)");
         }
 

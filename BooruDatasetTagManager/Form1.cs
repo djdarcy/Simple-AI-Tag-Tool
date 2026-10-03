@@ -1868,9 +1868,11 @@ namespace BooruDatasetTagManager
             HidePreview();
             Form_settings settings = new Form_settings();
             bool reloadDataset = false;
+            var aiBefore = TakeAiSnapshot();   // Simple-AI-Tag-Tool: Settings > AI is applied on Save (Form1.AiSettings.cs)
             if (settings.ShowDialog() == DialogResult.OK)
             {
                 SetStatus(I18n.GetText("TipSettingsSaved"));
+                ApplyAiSettings(aiBefore);
                 reloadDataset = settings.SubfoldersChanged && !string.IsNullOrEmpty(dazzleDatasetFolder);
             }
             settings.Close();

@@ -138,9 +138,10 @@ namespace BooruDatasetTagManager
             try
             {
                 string house = DazzleData.HouseSkillsFolder(ChatKind);
-                Directory.CreateDirectory(house);
-                if (!DazzleData.SkillFiles(ChatKind, true).Any())
+                // with the shipped skills hidden, none is written anywhere (#6)
+                if (Program.Settings.DazzleShowHouseSkills && !DazzleData.SkillFiles(ChatKind, true).Any())
                 {
+                    Directory.CreateDirectory(house);
                     File.WriteAllText(Path.Combine(house, "Assistant.md"),
                         "You are a careful assistant for a person refining an image dataset. You can see the current image. Answer questions about it plainly, and when asked to change its caption, name or folder, do it with the tools and confirm in one line.\n");
                     File.WriteAllText(Path.Combine(house, "Name from template.md"),
@@ -148,7 +149,8 @@ namespace BooruDatasetTagManager
                 }
             }
             catch (Exception e) { AppendTranscript("skills folder: " + e.Message, ErrorColor, true); }
-            string keep = select ?? loadedChatSkillName ?? Program.Settings.DazzleChatSkill;
+            string startWith = Program.Settings.DazzleChatDefaultSkill.Length > 0 ? Program.Settings.DazzleChatDefaultSkill : Program.Settings.DazzleChatSkill;
+            string keep = select ?? loadedChatSkillName ?? startWith;
             comboChatSkills.SelectedIndexChanged -= ChatSkillsSelectionChanged;
             try
             {
@@ -218,7 +220,8 @@ namespace BooruDatasetTagManager
 
         private void StartChatSession()
         {
-            chatSystemText = ExpandPlaceholders(textChatInstruction.Text.Trim()) + ToolParagraph;
+            string context = ChatContextBlock();   // only what the person chose (Settings > AI, or the strip's Context)
+            chatSystemText = ExpandPlaceholders(textChatInstruction.Text.Trim()) + (context.Length > 0 ? "\n\n" + context : "") + ToolParagraph;
             chatHistory = new JArray(new JObject { ["role"] = "system", ["content"] = chatSystemText });
             chatImageSentFor = null; chatLastTotalTokens = 0;
             transcript.Clear();
@@ -395,7 +398,7 @@ namespace BooruDatasetTagManager
         /// <summary>Above 75% of the loaded window, drop the oldest turns (never the system message) until under half.</summary>
         private void TrimHistoryIfNeeded()
         {
-            if (chatHistory == null || chatLastTotalTokens < chatContextLength * 0.75) return;
+            if (chatHistory == null || chatLastTotalTokens < chatContextLength * Program.Settings.DazzleChatTrimPercent / 100.0) return;
             int before = chatHistory.Count;
             // estimate: tokens are spread over the messages; remove from index 1 until the estimate is under half
             int estimate = chatLastTotalTokens;

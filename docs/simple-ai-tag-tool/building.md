@@ -124,9 +124,9 @@ dotnet build BooruDatasetTagManager\BooruDatasetTagManager.csproj -c Debug -tl:o
 ## LM Studio, for AI Refine and AI Chat
 
 1. Install [LM Studio](https://lmstudio.ai/) and download a **vision** model, one whose model card says it accepts images. Qwen vision models work well.
-2. Load the model with a context window of about **16k to 32k tokens**. A much larger window can make every request very slow if it does not fit in video memory.
+2. Load the model with a context window that fits the work. About **16k to 32k tokens** suits AI Refine's single runs. About **100k** suits a real AI Chat conversation, if it fits in video memory; a window that does not fit makes every request very slow.
 3. Start the server: the Developer tab, then *Start Server*. The default address is `http://127.0.0.1:1234`.
-4. In the tool, the address, API key, model name and timeout are under Settings > AutoTagger > OpenAI. The default is `http://127.0.0.1:1234/v1`. Leave the model name empty to use whatever model is loaded.
+4. In the tool, the address, API key, timeout and model are on Settings > AiApiServer, in the *OpenAI settings* block. The default is `http://127.0.0.1:1234/v1`. Leave the model as *(whatever model is loaded)* to use the loaded one. **Test** there, or on Settings > AI, says what the server has loaded, its context length and whether it can see images.
 
 The tool checks the server before each run and says plainly if no model is loaded or the model cannot see images. The guide's [AI Refine](guide.md#ai-refine-a-local-ai-pass) and [AI Chat](guide.md#ai-chat-an-assistant-that-acts) sections cover using them.
 

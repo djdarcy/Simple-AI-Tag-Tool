@@ -85,6 +85,21 @@ namespace BooruDatasetTagManager
         public bool DazzleDataPortable { get; set; } = false;        // mirrors the "portable" marker beside the exe, which is the real switch (DazzleData)
         public int DazzleConversationStore { get; set; } = 2;        // per-image files: 0 sidecar, 1 .satt in the dataset, 2 the program's store
         public bool DazzleShowHouseSkills { get; set; } = true;      // list the skills shipped beside the program as well as the person's own
+        // Settings > AI (2.15.0)
+        public string DazzleRefineDefaultSkill { get; set; } = "";   // "" = the skill used last
+        public string DazzleChatDefaultSkill { get; set; } = "";
+        public int DazzleChatTrimPercent { get; set; } = 75;         // above this share of the loaded context, the oldest turns are dropped
+        public bool DazzleSendRulesRefine { get; set; } = false;     // context sent automatically: all off by default (the person, 2026-10-02 20:02)
+        public bool DazzleSendChecksRefine { get; set; } = false;
+        public bool DazzleSendRulesChat { get; set; } = false;
+        public bool DazzleSendChecksChat { get; set; } = false;
+        public string DazzleRulesFraming { get; set; } = DazzleContext.DefaultRulesFraming;
+        public string DazzleChecksFraming { get; set; } = DazzleContext.DefaultChecksFraming;
+        public string DazzleSettingsTab { get; set; } = "";          // Settings reopens on the tab used last
+
+        /// <summary>Point the settings file at another folder (the data base moved); the next SaveSettings writes there.</summary>
+        public void DazzleRetarget(string dir) => settingsFile = Path.Combine(dir, "settings.json");
+        public string DazzleSettingsFile => settingsFile;
 
         public bool LoadSettingsLoadPreviewImages { get; set; } = true;
         public bool LoadSettingsReadMetadata { get; set; } = false;
@@ -183,6 +198,16 @@ namespace BooruDatasetTagManager
                 DazzleDataPortable = tempSettings.DazzleDataPortable;
                 DazzleConversationStore = tempSettings.DazzleConversationStore;
                 DazzleShowHouseSkills = tempSettings.DazzleShowHouseSkills;
+                DazzleRefineDefaultSkill = tempSettings.DazzleRefineDefaultSkill ?? "";
+                DazzleChatDefaultSkill = tempSettings.DazzleChatDefaultSkill ?? "";
+                DazzleChatTrimPercent = tempSettings.DazzleChatTrimPercent is int t && t >= 30 && t <= 95 ? t : 75;
+                DazzleSendRulesRefine = tempSettings.DazzleSendRulesRefine;
+                DazzleSendChecksRefine = tempSettings.DazzleSendChecksRefine;
+                DazzleSendRulesChat = tempSettings.DazzleSendRulesChat;
+                DazzleSendChecksChat = tempSettings.DazzleSendChecksChat;
+                DazzleRulesFraming = string.IsNullOrWhiteSpace(tempSettings.DazzleRulesFraming) ? DazzleContext.DefaultRulesFraming : tempSettings.DazzleRulesFraming;
+                DazzleChecksFraming = string.IsNullOrWhiteSpace(tempSettings.DazzleChecksFraming) ? DazzleContext.DefaultChecksFraming : tempSettings.DazzleChecksFraming;
+                DazzleSettingsTab = tempSettings.DazzleSettingsTab ?? "";
                 LoadSettingsLoadPreviewImages = tempSettings.LoadSettingsLoadPreviewImages;
                 LoadSettingsReadMetadata = tempSettings.LoadSettingsReadMetadata;
                 if (!string.IsNullOrEmpty(tempSettings.ColorScheme))
