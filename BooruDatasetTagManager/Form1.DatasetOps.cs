@@ -132,6 +132,7 @@ namespace BooruDatasetTagManager
             Program.DataManager.DataSet.TryAdd(newPath, item);
             Program.DataManager.RemoveFromCache(oldPath);
             if (proposals.TryGetValue(oldPath, out var prop)) { proposals.Remove(oldPath); proposals[newPath] = prop; }
+            MoveConversations(oldPath, newPath);   // its chat and Refine files follow it
             // the grid: rebind, restyle, reselect the same item
             bool wasCurrent = IsCurrentImage(oldPath);
             gridViewDS.DataSource = Program.DataManager.GetDataSourceWithLastFilter();

@@ -554,6 +554,7 @@ namespace BooruDatasetTagManager
                 Log("reply (" + result.Elapsed.TotalSeconds.ToString("F1") + " s, schema " + (result.SchemaUsed ? "on" : "off") + "):\n" + (result.Ok ? result.Content : "ERROR " + result.Error));
                 if (!result.Ok) { labelRefineStatus.Text = result.Cancelled ? "stopped" : result.Error; return; }
                 proposals[imagePath] = (leftCaption, result.Content, result);
+                SaveRefineRun(imagePath, req, result, leftCaption);   // kept with the image (Form1.Conversations.cs)
                 if (!string.Equals(currentInfo?.Path, imagePath, StringComparison.OrdinalIgnoreCase))
                 {
                     Log("the result is kept for " + Path.GetFileName(imagePath) + "; current is " + (currentInfo?.Path ?? "(none)"));

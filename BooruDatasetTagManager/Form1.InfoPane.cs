@@ -303,6 +303,7 @@ namespace BooruDatasetTagManager
                 return;
             }
             currentInfo = DazzleImageInfo.Collect(imgPath, img, previewLoadWatch.Elapsed, previewFromCache, 0, 0, Math.Max(1, gridViewDS.SelectedRows.Count));
+            SwitchConversationsTo(imgPath);   // this image's AI Chat conversation and AI Refine run (Form1.Conversations.cs)
             RenderProposalForCurrentImage();
             RefreshChatResultPanel();
             currentInfo.DecodeFailed = img == null;

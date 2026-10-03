@@ -96,6 +96,8 @@ namespace BooruDatasetTagManager
         public string DazzleRulesFraming { get; set; } = DazzleContext.DefaultRulesFraming;
         public string DazzleChecksFraming { get; set; } = DazzleContext.DefaultChecksFraming;
         public string DazzleSettingsTab { get; set; } = "";          // Settings reopens on the tab used last
+        public bool DazzleKeepConversations { get; set; } = true;    // each image's AI Chat conversation and AI Refine run kept on disk (#5)
+        public bool DazzleChatFromRefine { get; set; } = true;       // a chat on a refined image starts from the Refine run (the person, 2026-10-02 20:52)
 
         /// <summary>Point the settings file at another folder (the data base moved); the next SaveSettings writes there.</summary>
         public void DazzleRetarget(string dir) => settingsFile = Path.Combine(dir, "settings.json");
@@ -208,6 +210,8 @@ namespace BooruDatasetTagManager
                 DazzleRulesFraming = string.IsNullOrWhiteSpace(tempSettings.DazzleRulesFraming) ? DazzleContext.DefaultRulesFraming : tempSettings.DazzleRulesFraming;
                 DazzleChecksFraming = string.IsNullOrWhiteSpace(tempSettings.DazzleChecksFraming) ? DazzleContext.DefaultChecksFraming : tempSettings.DazzleChecksFraming;
                 DazzleSettingsTab = tempSettings.DazzleSettingsTab ?? "";
+                DazzleKeepConversations = tempSettings.DazzleKeepConversations;
+                DazzleChatFromRefine = tempSettings.DazzleChatFromRefine;
                 LoadSettingsLoadPreviewImages = tempSettings.LoadSettingsLoadPreviewImages;
                 LoadSettingsReadMetadata = tempSettings.LoadSettingsReadMetadata;
                 if (!string.IsNullOrEmpty(tempSettings.ColorScheme))

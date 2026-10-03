@@ -22,7 +22,7 @@ namespace BooruDatasetTagManager
         private NumericUpDown numAiTrim;
         private System.Windows.Forms.ComboBox comboAiModel, comboAiRefineDefault, comboAiChatDefault, comboAiStore;
         private System.Windows.Forms.CheckBox checkAiThink, checkAiSchema, checkAiTools, checkAiAskFiles, checkAiShowHouse, checkAiPortable,
-            checkAiRulesRefine, checkAiRulesChat, checkAiChecksRefine, checkAiChecksChat;
+            checkAiRulesRefine, checkAiRulesChat, checkAiChecksRefine, checkAiChecksChat, checkAiKeepConversations, checkAiChatFromRefine;
         private Label labelAiTest, labelAiTestHere, labelAiServer, labelAiFolders, labelAiSkillsFolder;
 
         private const string LastUsedSkill = "(the skill used last)";
@@ -111,7 +111,8 @@ namespace BooruDatasetTagManager
             checkAiAskFiles = C("Ask before each rename or move", Program.Settings.DazzleChatAskFiles);
             numAiTrim = new NumericUpDown { Name = "numAiTrim", Minimum = 30, Maximum = 95, Value = Math.Max(30, Math.Min(95, Program.Settings.DazzleChatTrimPercent)), Width = 70 };
             Row(chat, "Start with skill", comboAiChatDefault);
-            Row(chat, null, checkAiTools); Row(chat, null, checkAiAskFiles);
+            checkAiChatFromRefine = C("Start a chat from the image's AI Refine run, when it has one", Program.Settings.DazzleChatFromRefine);
+            Row(chat, null, checkAiTools); Row(chat, null, checkAiAskFiles); Row(chat, null, checkAiChatFromRefine);
             Row(chat, "Drop the oldest turns at (% of context)", numAiTrim);
             Hint(chat, "A real conversation wants about 100k tokens of context loaded in LM Studio.");
 
@@ -137,6 +138,8 @@ namespace BooruDatasetTagManager
             openRow.Controls.Add(B("Open data folder", (s, e) => OpenFolder(DazzleData.BaseFolder)));
             openRow.Controls.Add(B("Open Documents folder", (s, e) => OpenFolder(DazzleData.DocumentsRoot)));
             Row(data, null, openRow);
+            checkAiKeepConversations = C("Keep each image's AI Refine run and AI Chat conversation on disk", Program.Settings.DazzleKeepConversations);
+            Row(data, null, checkAiKeepConversations);
             Row(data, "Per-image files", comboAiStore);
             Hint(data, "Changing this moves the open dataset's files to the new place.");
 
@@ -157,7 +160,8 @@ namespace BooruDatasetTagManager
             // names, so each control has an automation id (UI probes find them by it)
             foreach (var (c, n) in new (Control, string)[] { (checkAiThink, "checkAiThink"), (checkAiSchema, "checkAiSchema"), (checkAiTools, "checkAiTools"), (checkAiAskFiles, "checkAiAskFiles"),
                 (checkAiShowHouse, "checkAiShowHouse"), (checkAiPortable, "checkAiPortable"), (checkAiRulesRefine, "checkAiRulesRefine"), (checkAiRulesChat, "checkAiRulesChat"),
-                (checkAiChecksRefine, "checkAiChecksRefine"), (checkAiChecksChat, "checkAiChecksChat") })
+                (checkAiChecksRefine, "checkAiChecksRefine"), (checkAiChecksChat, "checkAiChecksChat"),
+                (checkAiKeepConversations, "checkAiKeepConversations"), (checkAiChatFromRefine, "checkAiChatFromRefine") })
                 c.Name = n;
             SettingFrame.Tabs.Add(tabAi);
             if (Program.ColorManager.SelectedScheme != null)
@@ -284,6 +288,8 @@ namespace BooruDatasetTagManager
             Program.Settings.DazzleShowHouseSkills = checkAiShowHouse.Checked;
             Program.Settings.DazzleDataPortable = checkAiPortable.Checked;          // the request; the main window performs the switch
             Program.Settings.DazzleConversationStore = comboAiStore.SelectedIndex;  // likewise the move
+            Program.Settings.DazzleKeepConversations = checkAiKeepConversations.Checked;
+            Program.Settings.DazzleChatFromRefine = checkAiChatFromRefine.Checked;
             Program.Settings.DazzleSendRulesRefine = checkAiRulesRefine.Checked;
             Program.Settings.DazzleSendRulesChat = checkAiRulesChat.Checked;
             Program.Settings.DazzleSendChecksRefine = checkAiChecksRefine.Checked;

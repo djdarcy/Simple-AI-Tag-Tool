@@ -4,6 +4,20 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [2.14.2] - 2026-10-02
+
+### Added
+
+- **Each image has its own AI Chat conversation.** Moving to another image puts the current one away and brings that image's back, so several can be going at once. **New session** starts over for the current image only.
+- **Kept on disk.** Each image's chat and its latest AI Refine run are kept as two files (`<image>.chat.json` and `<image>.refine.json`), wherever Settings > AI keeps per-image files, and come back when the folder is opened again. A rename or move takes them with the image. A setting keeps them in memory only.
+- **Chat starts from Refine.** On an image with an AI Refine run, a new chat begins with that run (its instruction, request and proposal), so the model can discuss or build on it. A setting turns this off.
+- **LM Studio export and import.** Both files are in LM Studio's own conversation format, with the tool's details under one extra `satt` key. **Export** on the Chat strip writes this image's chat, or its Refine run, into LM Studio's conversations folder under `simple-ai-tag-tool\<dataset folder>\`. **Import** lists LM Studio's recent conversations, plus *From a file...*. The chosen one becomes this image's chat, and the next message continues it.
+
+### Fixed
+
+- WebP images can be sent to the model. They were sent raw because this build cannot decode WebP with System.Drawing, and LM Studio's server refused them ("'url' field must be a base64 encoded image"). They are now decoded with ImageSharp and sent as JPEG, like other images.
+- AI Chat's description of its `get_image` tool no longer mentions the folder's rules and the Check for list, which it stopped returning in 2.14.0.
+
 ## [2.14.1] - 2026-10-02
 
 ### Added

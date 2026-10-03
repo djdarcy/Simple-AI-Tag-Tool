@@ -457,7 +457,24 @@ namespace BooruDatasetTagManager
             }
             catch (Exception e)
             {
-                return (raw, mime, "sent raw (" + Short(e) + ")");
+                // System.Drawing cannot read WebP without libwebp, and LM Studio's server refuses WebP bytes ("'url' field
+                // must be a base64 encoded image", seen 2026-10-02 on a ComfyUI WebP): ImageSharp, already a dependency,
+                // decodes it, and it goes as JPEG like any other image
+                try
+                {
+                    using var isImg = SixLabors.ImageSharp.Image.Load(raw);
+                    int w = isImg.Width, h = isImg.Height;
+                    double s = Math.Min(1.0, (double)longSide / Math.Max(w, h));
+                    int nw = Math.Max(1, (int)Math.Round(w * s)), nh = Math.Max(1, (int)Math.Round(h * s));
+                    if (nw != w || nh != h) SixLabors.ImageSharp.Processing.ProcessingExtensions.Mutate(isImg, x => SixLabors.ImageSharp.Processing.ResizeExtensions.Resize(x, nw, nh));
+                    using var outMs = new MemoryStream();
+                    SixLabors.ImageSharp.ImageExtensions.SaveAsJpeg(isImg, outMs, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder { Quality = 90 });
+                    return (outMs.ToArray(), "image/jpeg", w + "x" + h + " -> " + nw + "x" + nh + " JPEG (decoded by ImageSharp)");
+                }
+                catch (Exception e2)
+                {
+                    return (raw, mime, "sent raw (" + Short(e) + "; ImageSharp: " + Short(e2) + ")");
+                }
             }
         }
 

@@ -37,7 +37,7 @@ namespace BooruDatasetTagManager
 
         private static readonly Color UserColor = Color.FromArgb(20, 60, 160), AssistantColor = Color.FromArgb(20, 110, 50), ToolColor = Color.FromArgb(110, 110, 110), ErrorColor = Color.FromArgb(180, 30, 30);
 
-        private const string ToolParagraph = "\n\nYou are inside Simple-AI-Tag-Tool, a caption editor for image training datasets. You act on the CURRENT image only, through these tools: get_image (its name, folder, caption, the latest AI proposal, the folder's rules and the check list), set_caption, rename_image, move_image, list_images. When the user asks for a change, make it with the tool and then confirm in one short line; do not describe a change instead of making it, and do not change anything the user did not ask for. The caption is a comma-separated tag line unless told otherwise. File names: no extension, no folder.";
+        private const string ToolParagraph = "\n\nYou are inside Simple-AI-Tag-Tool, a caption editor for image training datasets. You act on the CURRENT image only, through these tools: get_image (its name, folder, caption, the latest AI proposal, and its position in the dataset), set_caption, rename_image, move_image, list_images. When the user asks for a change, make it with the tool and then confirm in one short line; do not describe a change instead of making it, and do not change anything the user did not ask for. The caption is a comma-separated tag line unless told otherwise. File names: no extension, no folder.";
 
         // ---------------------------------------------------------------- layout
 
@@ -61,7 +61,8 @@ namespace BooruDatasetTagManager
             chatLogs.Click += (s, e) => ShowLog();
             var help = new ToolStripButton { Name = "buttonChatHelp", Text = "Help", Image = HelpGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, Alignment = ToolStripItemAlignment.Right, ToolTipText = "Help: the Chat section of the user guide" };
             help.Click += (s, e) => OpenUrl(GuideUrl + "#ai-chat-an-assistant-that-acts");
-            strip.Items.AddRange(new ToolStripItem[] { new ToolStripLabel("AI skill:"), comboChatSkills, chatSaveSkill, new ToolStripSeparator(), chatNewSession, new ToolStripSeparator(), chatThink, chatToolsOn, chatAskFiles, new ToolStripSeparator(), chatLogs, help });
+            var chatExport = BuildExportImportButtons(out var chatImport);   // LM Studio (Form1.Conversations.cs)
+            strip.Items.AddRange(new ToolStripItem[] { new ToolStripLabel("AI skill:"), comboChatSkills, chatSaveSkill, new ToolStripSeparator(), chatNewSession, new ToolStripSeparator(), chatThink, chatToolsOn, chatAskFiles, new ToolStripSeparator(), chatExport, chatImport, chatLogs, help });
             foreach (ToolStripItem it in strip.Items) if (!string.IsNullOrEmpty(it.ToolTipText)) AttachBlockTip(strip, it, it.ToolTipText);
 
             textChatInstruction = new TextBox { Name = "textChatInstruction", Multiline = true, Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical, AcceptsReturn = true, Font = gridFont };
@@ -224,7 +225,9 @@ namespace BooruDatasetTagManager
             chatSystemText = ExpandPlaceholders(textChatInstruction.Text.Trim()) + (context.Length > 0 ? "\n\n" + context : "") + ToolParagraph;
             chatHistory = new JArray(new JObject { ["role"] = "system", ["content"] = chatSystemText });
             chatImageSentFor = null; chatLastTotalTokens = 0;
-            transcript.Clear();
+            if (currentInfo?.Path != null && !string.Equals(currentInfo.Path, chatSlotPath, StringComparison.OrdinalIgnoreCase)) { chatSlotPath = currentInfo.Path; chatSlotRoot = dazzleDatasetFolder; }   // a session belongs to the image it starts on (#5)
+            foreach (var m in RefineOpening(chatSlotPath)) chatHistory.Add(m);   // continue from the image's Refine run
+            RenderTranscript();
             UpdateContextMeter();
         }
 
@@ -289,8 +292,9 @@ namespace BooruDatasetTagManager
                         else if (d.Kind == DazzleLmStudio.DeltaKind.Content) contentSoFar.Append(d.Text);
                         labelContext.Text = ContextText() + "   " + probe.Model + ": thinking " + reasoningChars + ", reply " + contentSoFar.Length;
                     });
-                    var r = await client.ChatAsync(chatHistory, tools, chatThink.Checked, Program.Settings.DazzleRefineMaxTokens, Program.Settings.DazzleRefineTemperature, progress, chatCts.Token);
+                    var r = await client.ChatAsync(ForTheServer(chatHistory), tools, chatThink.Checked, Program.Settings.DazzleRefineMaxTokens, Program.Settings.DazzleRefineTemperature, progress, chatCts.Token);
                     if (r.TotalTokens is int tt) chatLastTotalTokens = tt;
+                    chatLastModel = probe.Model ?? chatLastModel;
                     if (r.Reasoning.Length > 0) Log("reasoning:\n" + r.Reasoning);
                     if (!r.Ok) { AppendTranscript(r.Cancelled ? "stopped" : r.Error, ErrorColor, true); Log("ERROR " + r.Error); break; }
                     chatHistory.Add(DazzleLmStudio.AssistantMessage(r));
@@ -315,7 +319,17 @@ namespace BooruDatasetTagManager
                 chatCts.Dispose(); chatCts = null;
                 buttonSend.Enabled = true; buttonChatStop.Enabled = false;
                 textChatInput.Focus();
+                AfterChatTurn();   // write this image's chat; apply an image change that came in meanwhile
             }
+        }
+
+        /// <summary>The history as the server takes it: the tool's own markers (satt_*) are not OpenAI fields.</summary>
+        private static JArray ForTheServer(JArray history)
+        {
+            if (!history.OfType<JObject>().Any(m => m.Properties().Any(p => p.Name.StartsWith("satt_")))) return history;
+            var copy = (JArray)history.DeepClone();
+            foreach (var m in copy.OfType<JObject>()) foreach (var p in m.Properties().Where(p => p.Name.StartsWith("satt_")).ToList()) p.Remove();
+            return copy;
         }
 
         private async Task<string> ExecuteToolAsync(DazzleLmStudio.ToolCall call)
