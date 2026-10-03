@@ -107,7 +107,7 @@ namespace BooruDatasetTagManager
         public static readonly string[] ItemKinds = { "chat", "refine", "rules" };
 
         /// <summary>The per-image store's three choices, as Settings > AI shows them.</summary>
-        public static readonly string[] StoreChoices = { "Beside each image (sidecar)", "In the dataset's .satt folder", "In the program's data store" };
+        public static string[] StoreChoices => new[] { I18n.GetText("SettingsAiStoreSidecar"), I18n.GetText("SettingsAiStoreDataset"), I18n.GetText("SettingsAiStoreProgram") };
 
         // ------------------------------------------------------------ skills
 

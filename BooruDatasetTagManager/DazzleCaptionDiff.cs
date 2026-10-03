@@ -150,5 +150,18 @@ namespace BooruDatasetTagManager
                 if (res.Left[l].Pair < 0 && keepLeft.Contains(l)) parts.Add(res.Left[l].Text);
             return string.Join(", ", parts);
         }
+
+        /// <summary>
+        /// Keep current + add new (the person, 2026-10-02): every item of the current caption as it stands, in its
+        /// order, then the proposal's added items, minus any chip dropped. Items the two share are not repeated, and an
+        /// item the proposal rewrote keeps the current wording.
+        /// </summary>
+        public static string ComposeAppend(Result res, ISet<int> dropRight)
+        {
+            var parts = res.Left.Select(i => i.Text).ToList();
+            for (int r = 0; r < res.Right.Count; r++)
+                if (res.Right[r].Kind == Kind.Added && !dropRight.Contains(r)) parts.Add(res.Right[r].Text);
+            return string.Join(", ", parts);
+        }
     }
 }

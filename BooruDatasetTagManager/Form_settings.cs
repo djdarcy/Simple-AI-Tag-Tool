@@ -286,6 +286,7 @@ namespace BooruDatasetTagManager
             comboAutocompSort.SelectedIndex = Extensions.GetEnumIndexFromValue<AutocompleteSort>(Program.Settings.AutocompleteSort.ToString());
 
             Program.Settings.Hotkeys.ChangeLanguage();
+            SwitchLanguageDazzle();   // Simple-AI-Tag-Tool: the fork's labels on these tabs (Form_settings.Ai.cs)
         }
         bool isControlKeyPressed = false;
         Dictionary<string, HotkeyItem> tempHotkeys = new Dictionary<string, HotkeyItem>();

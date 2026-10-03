@@ -97,7 +97,22 @@ namespace BooruDatasetTagManager
             // the bottom half: transcript over an input line
             panelChatBottom = new Panel { Dock = DockStyle.Fill, Name = "panelChatBottom", Visible = false };
             transcript = new RichTextBox { Name = "transcript", Dock = DockStyle.Fill, ReadOnly = true, BackColor = SystemColors.Window, Font = gridFont, DetectUrls = false, HideSelection = false };
-            transcript.GotFocus += (s, e) => BeginInvoke(new Action(() => textChatInput.Focus()));
+            // the transcript keeps the focus a click gives it, so text can be selected and copied (the person, 2026-10-02);
+            // typing a character there goes on in the input box instead, carrying that character
+            transcript.KeyPress += (s, e) =>
+            {
+                if (char.IsControl(e.KeyChar)) return;   // Ctrl+C, Ctrl+A and the like stay with the transcript
+                e.Handled = true;
+                textChatInput.Focus();
+                textChatInput.SelectionStart = textChatInput.TextLength;
+                textChatInput.SelectedText = e.KeyChar.ToString();
+            };
+            var transcriptMenu = new ContextMenuStrip();
+            transcriptMenu.Items.Add("Copy", null, (s, e) => { if (transcript.SelectionLength > 0) transcript.Copy(); });
+            transcriptMenu.Items.Add("Copy all", null, (s, e) => { if (transcript.TextLength > 0) Clipboard.SetText(transcript.Text); });
+            transcriptMenu.Items.Add("Select all", null, (s, e) => transcript.SelectAll());
+            transcriptMenu.Opening += (s, e) => transcriptMenu.Items[0].Enabled = transcript.SelectionLength > 0;
+            transcript.ContextMenuStrip = transcriptMenu;
             var inputRow = new Panel { Dock = DockStyle.Bottom, Height = gridFont.Height * 2 + 14, Padding = new Padding(2) };
             textChatInput = new TextBox { Name = "textChatInput", Multiline = true, Dock = DockStyle.Fill, Font = gridFont, AcceptsReturn = false };
             textChatInput.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter && !e.Shift) { e.SuppressKeyPress = true; _ = SendChatAsync(); } };
@@ -106,6 +121,20 @@ namespace BooruDatasetTagManager
             buttonChatStop = new Button { Name = "buttonChatStop", Text = "Stop", Dock = DockStyle.Right, Width = 60, Enabled = false };
             buttonChatStop.Click += (s, e) => chatCts?.Cancel();
             inputRow.Controls.Add(textChatInput); inputRow.Controls.Add(buttonSend); inputRow.Controls.Add(buttonChatStop);
+            // the input grows with what is typed, wrapped lines included, from two lines up to six, then scrolls; it
+            // shrinks again when the message is sent (the person, 2026-10-02: "so users can see all the text they're typing")
+            int lineHeight = TextRenderer.MeasureText("Ag", gridFont).Height;
+            void FitChatInput()
+            {
+                int lines = textChatInput.TextLength == 0 ? 1 : textChatInput.GetLineFromCharIndex(textChatInput.TextLength) + 1;
+                int shown = Math.Min(6, Math.Max(2, lines));
+                int want = shown * lineHeight + 14;
+                if (inputRow.Height != want) inputRow.Height = want;
+                // no scrollbar toggling past six lines: changing ScrollBars recreates the box's window, which flickers
+                // and can move the caret while typing (seen 2026-10-02); the box scrolls with the caret and the wheel
+            }
+            textChatInput.TextChanged += (s, e) => FitChatInput();
+            textChatInput.SizeChanged += (s, e) => FitChatInput();   // a narrower pane wraps into more lines
             panelChatBottom.Controls.Add(transcript);
             panelChatBottom.Controls.Add(inputRow);
             splitMiddle.Panel2.Controls.Add(panelChatBottom);
@@ -254,7 +283,7 @@ namespace BooruDatasetTagManager
             var client = new DazzleLmStudio(settings.ConnectionAddress, settings.ApiKey, settings.RequestTimeout);
             chatCts = new CancellationTokenSource();
             buttonSend.Enabled = false; buttonChatStop.Enabled = true; textChatInput.Clear();
-            AppendTranscript("You: " + text, UserColor, false);
+            AppendTranscript("You: " + text, UserColor, false, turnStart: true);
             try
             {
                 var probe = await client.ProbeAsync(string.IsNullOrWhiteSpace(settings.Model) ? null : settings.Model.Trim(), chatCts.Token);
@@ -298,8 +327,9 @@ namespace BooruDatasetTagManager
                     if (r.Reasoning.Length > 0) Log("reasoning:\n" + r.Reasoning);
                     if (!r.Ok) { AppendTranscript(r.Cancelled ? "stopped" : r.Error, ErrorColor, true); Log("ERROR " + r.Error); break; }
                     chatHistory.Add(DazzleLmStudio.AssistantMessage(r));
+                    // the reply opens the turn; the thought note follows it, so the blank line sits above the turn and not inside it
+                    if (r.Content.Length > 0) AppendTranscript("AI: " + r.Content, AssistantColor, false, turnStart: true);
                     if (r.Reasoning.Length > 0) AppendTranscript("(thought " + r.Reasoning.Length + " chars -- see Logs)", ToolColor, true);
-                    if (r.Content.Length > 0) AppendTranscript("AI: " + r.Content, AssistantColor, false);
                     Log("assistant: " + r.Content + (r.ToolCalls.Count > 0 ? "\n  tool calls: " + string.Join("; ", r.ToolCalls.Select(c => c.Name + " " + c.Arguments)) : ""));
                     if (r.ToolCalls.Count == 0) break;
                     foreach (var call in r.ToolCalls)
@@ -448,8 +478,10 @@ namespace BooruDatasetTagManager
             UpdateContextMeter();
         }
 
-        /// <summary>Append a line; the model's light Markdown -- **bold** and `code` -- is rendered rather than shown raw (user's session, 2026-10-02).</summary>
-        private void AppendTranscript(string text, Color color, bool italic)
+        /// <summary>Append a line; the model's light Markdown -- **bold** and `code` -- is rendered rather than shown raw (user's session, 2026-10-02).
+        /// A <paramref name="turnStart"/> entry ("You: ", "AI: ", "AI Refine proposed: ") gets one blank line above it, unless the
+        /// transcript is empty, and its label in bold; tool, system and error lines stay attached to the turn around them.</summary>
+        private void AppendTranscript(string text, Color color, bool italic, bool turnStart = false)
         {
             if (transcript == null) return;
             var baseFont = italic ? new Font(transcript.Font, FontStyle.Italic) : transcript.Font;
@@ -457,6 +489,12 @@ namespace BooruDatasetTagManager
             var codeFont = new Font(FontFamily.GenericMonospace, transcript.Font.Size, italic ? FontStyle.Italic : FontStyle.Regular);
             transcript.SelectionStart = transcript.TextLength; transcript.SelectionLength = 0;
             int i = 0;
+            if (turnStart)
+            {
+                if (transcript.TextLength > 0) Run("\n", baseFont, color);
+                int colon = text.IndexOf(": ", StringComparison.Ordinal);
+                if (colon > 0 && colon < 24) { Run(text.Substring(0, colon + 1), boldFont, color); i = colon + 1; }
+            }
             while (i < text.Length)
             {
                 int bold = text.IndexOf("**", i, StringComparison.Ordinal);

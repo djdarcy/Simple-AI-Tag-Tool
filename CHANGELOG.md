@@ -4,6 +4,27 @@ All notable changes to Simple-AI-Tag-Tool are listed here. The format follows [K
 
 Versions continue from the BooruDatasetTagManager release this project is based on (2.6.3), so the version number shows the shared base. For changes in BooruDatasetTagManager itself, see its [releases](https://github.com/starik222/BooruDatasetTagManager/releases).
 
+## [Unreleased]
+
+## [2.14.3] - 2026-10-02
+
+### Added
+
+- AI Refine has a fourth way to accept a proposal: **Keep current + add new** keeps every tag of the current caption, in its order, and appends only the items the proposal adds. Items both sides share are not repeated. An item the proposal rewrote keeps the current wording. A chip clicked to drop stays out.
+- AI Chat's transcript can be selected and copied, with Ctrl+C or a right-click menu (Copy, Copy all, Select all). It used to hand the focus straight back to the input box. Typing a character while the transcript has the focus carries on in the input box.
+- AI Chat's input box grows as you type, wrapped lines included, from two lines up to six. Past six it scrolls with the cursor, and it shrinks back when the message is sent.
+- AI Chat's transcript leaves a blank line above each "You:" and "AI:" turn, and above "AI Refine proposed:", and shows the label in bold, so it is easier to see who said what. Tool and status lines stay attached to the turn they belong to. A saved conversation reopens with the same spacing. The "(thought N chars)" note now follows the reply it belongs to rather than coming before it.
+
+### Changed
+
+- Settings > AI, "Where your data lives": each folder is shown on its own line, in the order it is read, in a box you can select and copy from, with its own Open button. A long path no longer runs past the dialog's edge. The skills folder is shown the same way.
+- Settings: the AiApiServer tab now sits just before the AI tab, since the AI tab's server is configured there.
+- Settings: every string the fork added to the Settings dialog (the AI tab, and the fork's options on the General and UI tabs) now comes from the language files, like the rest of the program. New keys are in English in `en-US.txt`, and the program copies them into the other language files until they are translated.
+
+### Fixed
+
+- Typing a capital letter in a text box no longer runs a shortcut. The original program's Shift+letter shortcuts (Shift+W add tag to selected, Shift+R remove, Shift+F and Shift+G the tag filter) fired while typing in the AI Chat input, the AI instructions or any other box. While the cursor is in something you type in, a plain or Shift-only key now types. Ctrl and Alt shortcuts and the function keys work as before.
+
 ## [2.14.2] - 2026-10-02
 
 ### Added

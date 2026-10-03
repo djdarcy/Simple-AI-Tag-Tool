@@ -661,6 +661,14 @@ namespace BooruDatasetTagManager
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern IntPtr GetFocus();
 
+        /// <summary>A key that types into a box: no modifier or Shift only, and not a function key.</summary>
+        private static bool IsTypedKey(Keys keyData)
+        {
+            Keys mods = keyData & Keys.Modifiers, key = keyData & Keys.KeyCode;
+            if ((mods & (Keys.Control | Keys.Alt)) != 0) return false;
+            return !(key >= Keys.F1 && key <= Keys.F24);
+        }
+
         /// <summary>True when keystrokes are going into something you type in.</summary>
         private static bool IsTypingFocus()
         {

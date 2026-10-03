@@ -2018,6 +2018,15 @@ namespace BooruDatasetTagManager
             // Dazzle* entries were already tried by DazzleNavigationKey; when it declined
             // (e.g. Space while typing) the key belongs to the focused control.
             var hotkey = Program.Settings.Hotkeys.Items.Find(a => a.FullKeyData == keyData && !a.Id.StartsWith("Dazzle"));
+            // Simple-AI-Tag-Tool: while typing (any editable text box or combo box -- the chat input, the AI instructions,
+            // the caption), a plain or Shift-only key is a character, never a shortcut; Shift+W typed into the chat ran a
+            // command (the person, 2026-10-02). Ctrl/Alt chords and the function keys still act as shortcuts.
+            if (hotkey != null && IsTypingFocus() && IsTypedKey(keyData))
+                return base.ProcessCmdKey(ref msg, keyData);
+            // Ctrl+C, Ctrl+A and the other text-editing chords belong to whatever text box has the focus, read-only ones
+            // included (the chat transcript, the info pane's prompt box), even if a shortcut is mapped to one of them
+            if (hotkey != null && Control.FromChildHandle(GetFocus()) is TextBoxBase && IsTextEditingChord(keyData))
+                return base.ProcessCmdKey(ref msg, keyData);
             if (hotkey != null)
             {
                 if (IsDazzleTextBoxFocused())

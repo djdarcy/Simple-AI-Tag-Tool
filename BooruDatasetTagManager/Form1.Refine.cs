@@ -30,7 +30,7 @@ namespace BooruDatasetTagManager
         private SplitContainer splitSides;
         private FlowLayoutPanel flowLeft, flowRight;
         private Label labelLeft, labelRight;
-        private Button buttonTakeLeft, buttonTakeRight, buttonApplyChips;
+        private Button buttonTakeLeft, buttonTakeRight, buttonApplyChips, buttonKeepAndAdd;
         private Form logForm; private TextBox logBox;
         private readonly StringBuilder refineLog = new StringBuilder();
         private CancellationTokenSource runCts;
@@ -168,7 +168,10 @@ namespace BooruDatasetTagManager
             buttonTakeLeft.Click += (s, e) => { if (currentDiff != null) AcceptCaption(string.Join(", ", currentDiff.Left.Select(i => i.Text)), "kept the current caption"); };
             buttonTakeRight.Click += (s, e) => { if (currentDiff != null) AcceptCaption(string.Join(", ", currentDiff.Right.Select(i => i.Text)), "took the proposal"); };
             buttonApplyChips.Click += (s, e) => { if (currentDiff != null) AcceptCaption(DazzleCaptionDiff.Compose(currentDiff, droppedRight, keptLeft), "applied the chip choices"); };
-            buttons.Controls.AddRange(new Control[] { buttonTakeRight, buttonApplyChips, buttonTakeLeft });
+            // keep every current tag and add only what the proposal adds (the person, 2026-10-02); a dropped chip stays out
+            buttonKeepAndAdd = new Button { Name = "buttonKeepAndAdd", Text = "Keep current + add new", AutoSize = true, Enabled = false };
+            buttonKeepAndAdd.Click += (s, e) => { if (currentDiff != null) AcceptCaption(DazzleCaptionDiff.ComposeAppend(currentDiff, droppedRight), "kept the current caption and added the proposal's new items"); };
+            buttons.Controls.AddRange(new Control[] { buttonTakeRight, buttonApplyChips, buttonKeepAndAdd, buttonTakeLeft });
             // a click on the chip area or the buttons hands the keyboard back to the dataset list
             foreach (var c in new Control[] { flowLeft, flowRight, buttons }) c.MouseUp += (s, e) => gridViewDS.Focus();
 
@@ -612,7 +615,7 @@ namespace BooruDatasetTagManager
                 flowLeft.Controls.Add(MakeChip(new DazzleCaptionDiff.Item { Text = items[i], Kind = DazzleCaptionDiff.Kind.Same }, i, false));
             FitChipWidths(flowLeft);
             flowLeft.ResumeLayout();
-            buttonTakeLeft.Enabled = buttonTakeRight.Enabled = buttonApplyChips.Enabled = false;
+            buttonTakeLeft.Enabled = buttonTakeRight.Enabled = buttonApplyChips.Enabled = buttonKeepAndAdd.Enabled = false;
             labelLeft.Text = "Current caption  (" + items.Count + ")"; labelRight.Text = "Proposal  (press Play)";
             if (runCts == null) labelRefineStatus.Text = currentInfo == null ? "select an image, then Play" : "no proposal for this image yet -- Play";
         }
@@ -630,7 +633,7 @@ namespace BooruDatasetTagManager
             flowLeft.ResumeLayout(); flowRight.ResumeLayout();
             labelLeft.Text = "Current caption  (" + currentDiff.Left.Count + ")";
             labelRight.Text = "Proposal  (" + currentDiff.Right.Count + ")  " + currentDiff.Summary;
-            buttonTakeLeft.Enabled = buttonTakeRight.Enabled = buttonApplyChips.Enabled = true;
+            buttonTakeLeft.Enabled = buttonTakeRight.Enabled = buttonApplyChips.Enabled = buttonKeepAndAdd.Enabled = true;
             // the proposal is checked by the same rules engine the caption is, before anyone accepts it
             string rulesNote = "";
             if (folderRules.Count > 0)

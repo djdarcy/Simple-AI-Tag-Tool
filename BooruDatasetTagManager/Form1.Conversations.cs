@@ -131,12 +131,12 @@ namespace BooruDatasetTagManager
                     // the facts the tool adds before the person's words are not the person's words
                     int cut = text.IndexOf("\n\n", StringComparison.Ordinal);
                     if ((text.StartsWith("Current image:") || text.StartsWith("The current image is now:")) && cut > 0) text = text.Substring(cut + 2);
-                    AppendTranscript("You: " + text, UserColor, false);
+                    AppendTranscript("You: " + text, UserColor, false, turnStart: true);
                 }
                 else if (role == "assistant")
                 {
-                    if ((bool?)m["satt_from_refine"] == true) { AppendTranscript("AI Refine proposed: " + text, AssistantColor, false); continue; }
-                    if (!string.IsNullOrEmpty(text)) AppendTranscript("AI: " + text, AssistantColor, false);
+                    if ((bool?)m["satt_from_refine"] == true) { AppendTranscript("AI Refine proposed: " + text, AssistantColor, false, turnStart: true); continue; }
+                    if (!string.IsNullOrEmpty(text)) AppendTranscript("AI: " + text, AssistantColor, false, turnStart: true);
                     foreach (var call in (m["tool_calls"] as JArray ?? new JArray()))
                         AppendTranscript("[" + (string)call["function"]?["name"] + "] " + (string)call["function"]?["arguments"], ToolColor, true);
                 }
