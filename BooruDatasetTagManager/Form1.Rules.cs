@@ -71,7 +71,23 @@ namespace BooruDatasetTagManager
             splitRules.Panel1.Controls.Add(labelRules);
             splitRules.Panel2.Controls.Add(checkBox);
             splitRules.Panel2.Controls.Add(checkLabel);
+            gridRules.RowsAdded += (s, e) => { if (!rulesLoading) BeginInvoke(new Action(FitRulesGrid)); };
             return splitRules;
+        }
+
+        private readonly SkillSplit rulesSplit = new SkillSplit();
+
+        /// <summary>
+        /// Grow the rules grid so every rule and the empty row for the next one are in view, when a rule is added or a folder's
+        /// rules load: at most two thirds of the middle column, never shrinking a grid the person made taller. The Check for
+        /// box keeps its height; the room comes from the tags box below, as with the skill box (djdarcy, 2026-10-03).
+        /// </summary>
+        private void FitRulesGrid()
+        {
+            if (splitRules == null || gridRules == null || !splitRules.Visible || splitMiddle == null || splitMiddle.Height < 200 || splitRules.Height < 60) return;
+            int want = (labelRules?.Height ?? 0) + gridRules.ColumnHeadersHeight + gridRules.Rows.Count * gridRules.RowTemplate.Height + 6;
+            want = Math.Min(want, splitMiddle.Height * 2 / 3);
+            if (want > splitRules.SplitterDistance) SetSkillHeight(splitRules, want, rulesSplit);
         }
 
         private static string RulesHint(int count, string note)
@@ -151,6 +167,7 @@ namespace BooruDatasetTagManager
                 gridRules.Rows[i].Tag = rule;
             }
             rulesLoading = false;
+            if (IsHandleCreated) BeginInvoke(new Action(FitRulesGrid));
         }
 
         private void RebuildRulesFromGrid()

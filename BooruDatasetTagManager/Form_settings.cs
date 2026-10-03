@@ -58,7 +58,7 @@ namespace BooruDatasetTagManager
             checkBoxReopenLastFolder.Checked = Program.Settings.DazzleReopenLastFolder;
             textBoxComfydbgPath.Text = Program.Settings.DazzleComfydbgPath;
             // the fork's rows run past the dialog's height; the tab (a third-party Tab, no AutoScroll of its own) gets a
-            // scrolling panel that takes over its controls, so the person scrolls rather than resizes (user, 2026-10-02)
+            // scrolling panel that takes over its controls, so the person scrolls rather than resizes (djdarcy, 2026-10-02)
             if (!(tabUI.Controls.Count == 1 && tabUI.Controls[0].Name == "panelUiScroll"))
             {
                 var scroller = new System.Windows.Forms.Panel { Name = "panelUiScroll", Dock = System.Windows.Forms.DockStyle.Fill, AutoScroll = true };

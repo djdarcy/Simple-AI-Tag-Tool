@@ -26,7 +26,7 @@ namespace BooruDatasetTagManager
         private Label labelAiTest, labelAiTestHere, labelAiServer, labelAiFolders;
         private System.Windows.Forms.TextBox textAiSkillsFolder, textAiBaseFolder, textAiOtherFolder, textAiDocumentsFolder;
 
-        // every string on this tab comes from Languages\<lang>.txt, keys SettingsAi*, as upstream's strings do (the person, 2026-10-02 23:15)
+        // every string on this tab comes from Languages\<lang>.txt, keys SettingsAi*, as upstream's strings do (djdarcy, 2026-10-02 23:15)
         private static string T(string key) => I18n.GetText(key);
         private static string T(string key, params object[] args) => string.Format(I18n.GetText(key), args);
         private static string LastUsedSkill => T("SettingsAiLastUsedSkill");
@@ -37,6 +37,23 @@ namespace BooruDatasetTagManager
         {
             public string Id; public bool Loaded;
             public override string ToString() => Id + (Loaded ? LoadedSuffix : "");
+        }
+
+        private System.Windows.Forms.ComboBox comboResizeMode;
+
+        /// <summary>The UI tab's "When the window is resized" row, added under its last control (djdarcy, 2026-10-03).</summary>
+        private void BuildResizeOption()
+        {
+            var host = tabUI.Controls.Cast<Control>().FirstOrDefault(c => c.Name == "panelUiScroll") ?? tabUI;
+            if (host.Controls.ContainsKey("comboResizeMode")) return;
+            // under the lowest control; not filtered by Visible, which is false for every control before the dialog is shown
+            int y = host.Controls.Cast<Control>().Select(c => c.Bottom).DefaultIfEmpty(0).Max() + 12;
+            var label = new Label { Name = "labelResizeMode", Text = T("SettingsResizeMode"), AutoSize = true, Location = new Point(labelEndOfFolder.Left, y + 3) };
+            comboResizeMode = new System.Windows.Forms.ComboBox { Name = "comboResizeMode", DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(comboBoxEndOfFolder.Left, y),
+                Width = Math.Max(comboBoxEndOfFolder.Width, textBoxComfydbgPath.Right - comboBoxEndOfFolder.Left) };
+            comboResizeMode.Items.AddRange(new object[] { T("SettingsResizeTagsBox"), T("SettingsResizeShare") });
+            comboResizeMode.SelectedIndex = Program.Settings.DazzleResizeMode == 1 ? 1 : 0;
+            host.Controls.Add(label); host.Controls.Add(comboResizeMode);
         }
 
         private void BuildAiTab()
@@ -79,7 +96,7 @@ namespace BooruDatasetTagManager
             // a folder is shown in a read-only box, so the path can be selected and copied and a long one stays inside the dialog
             System.Windows.Forms.TextBox PathBox(string name) => new System.Windows.Forms.TextBox { Name = name, ReadOnly = true, Width = (int)(boxW * 1.3), Margin = new Padding(2, 3, 2, 2) };
 
-            // ---- Server: configured in one place, the AiApiServer tab's OpenAI block (the person, 2026-10-02 20:14), which
+            // ---- Server: configured in one place, the AiApiServer tab's OpenAI block (djdarcy, 2026-10-02 20:14), which
             // gains Model, Load list and Test; this tab names the server and can test it
             BuildServerExtras(boxW);
             var server = Group(T("SettingsAiGroupServer"), "groupAiServer");
@@ -130,7 +147,7 @@ namespace BooruDatasetTagManager
             Row(skills, T("SettingsAiYourSkills"), textAiSkillsFolder, B(T("SettingsAiBtnOpen"), (s, e) => OpenFolder(textAiSkillsFolder.Text)));
             Row(skills, null, checkAiShowHouse);
 
-            // ---- Where data lives: one folder per line, in the order they are read, each with its own Open (the person, 2026-10-02 23:15)
+            // ---- Where data lives: one folder per line, in the order they are read, each with its own Open (djdarcy, 2026-10-02 23:15)
             var data = Group(T("SettingsAiGroupData"), "groupAiData");
             checkAiPortable = C(T("SettingsAiPortable"), DazzleData.IsPortable);
             // each label on its own line, the folder under it with its Open beside it
@@ -164,13 +181,13 @@ namespace BooruDatasetTagManager
             checkAiRulesRefine = C(T("SettingsAiGroupRefine"), Program.Settings.DazzleSendRulesRefine); checkAiRulesChat = C(T("SettingsAiGroupChat"), Program.Settings.DazzleSendRulesChat);
             checkAiChecksRefine = C(T("SettingsAiGroupRefine"), Program.Settings.DazzleSendChecksRefine); checkAiChecksChat = C(T("SettingsAiGroupChat"), Program.Settings.DazzleSendChecksChat);
             textAiRulesFraming = Framing("textAiRulesFraming", Program.Settings.DazzleRulesFraming, boxW);
-            textAiChecksFraming = Framing("textAiChecksFraming", Program.Settings.DazzleChecksFraming, boxW);
+            textAiChecksFraming = Framing("textAiChecksFraming", Program.Settings.DazzleUnwantedFraming, boxW);
             var rulesRow = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0) }; rulesRow.Controls.AddRange(new Control[] { checkAiRulesRefine, checkAiRulesChat });
             var checksRow = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0) }; checksRow.Controls.AddRange(new Control[] { checkAiChecksRefine, checkAiChecksChat });
             Row(ctx, T("SettingsAiRules"), rulesRow);
             Row(ctx, T("SettingsAiFramedBy"), textAiRulesFraming, B(T("SettingsAiBtnReset"), (s, e) => textAiRulesFraming.Text = DazzleContext.DefaultRulesFraming));
             Row(ctx, T("SettingsAiChecks"), checksRow);
-            Row(ctx, T("SettingsAiFramedBy"), textAiChecksFraming, B(T("SettingsAiBtnReset"), (s, e) => textAiChecksFraming.Text = DazzleContext.DefaultChecksFraming));
+            Row(ctx, T("SettingsAiFramedBy"), textAiChecksFraming, B(T("SettingsAiBtnReset"), (s, e) => textAiChecksFraming.Text = DazzleContext.DefaultUnwantedFraming));
             Hint(ctx, T("SettingsAiContextHint"));
 
             // names, so each control has an automation id (UI probes find them by it)
@@ -179,7 +196,8 @@ namespace BooruDatasetTagManager
                 (checkAiChecksRefine, "checkAiChecksRefine"), (checkAiChecksChat, "checkAiChecksChat"),
                 (checkAiKeepConversations, "checkAiKeepConversations"), (checkAiChatFromRefine, "checkAiChatFromRefine") })
                 c.Name = n;
-            // AiApiServer goes last but one, beside AI, so the two read as one pair (the person, 2026-10-02 23:20)
+            // AiApiServer goes last but one, beside AI, so the two read as one pair (djdarcy, 2026-10-02 23:20)
+            BuildResizeOption();   // after the request rows have moved from the UI tab to this one
             SettingFrame.Tabs.Remove(tabInterrogator);
             SettingFrame.Tabs.Add(tabInterrogator);
             SettingFrame.Tabs.Add(tabAi);
@@ -254,8 +272,9 @@ namespace BooruDatasetTagManager
             return c;
         }
 
-        private static System.Windows.Forms.TextBox Framing(string name, string text, int width) =>
-            new System.Windows.Forms.TextBox { Name = name, Multiline = true, ScrollBars = ScrollBars.Vertical, WordWrap = true, Width = (int)(width * 1.4), Height = 64, Text = text ?? "" };
+        // five lines, so the default framing sentence shows whole without scrolling (2026-10-03)
+        private System.Windows.Forms.TextBox Framing(string name, string text, int width) =>
+            new System.Windows.Forms.TextBox { Name = name, Multiline = true, ScrollBars = ScrollBars.Vertical, WordWrap = true, Width = (int)(width * 1.2), Height = Font.Height * 5 + 18, Text = text ?? "" };
 
         private void ShowFolders()
         {
@@ -317,6 +336,7 @@ namespace BooruDatasetTagManager
         /// <summary>Called by Save before the settings are written. The portable switch and the store move are applied by the main window afterwards.</summary>
         private void SaveAiTab()
         {
+            if (comboResizeMode != null) Program.Settings.DazzleResizeMode = comboResizeMode.SelectedIndex == 1 ? 1 : 0;
             if (tabAi == null) return;
             Program.Settings.OpenAiAutoTagger.Model = ModelValue();
             Program.Settings.DazzleRefineThink = checkAiThink.Checked;
@@ -336,7 +356,7 @@ namespace BooruDatasetTagManager
             Program.Settings.DazzleSendChecksRefine = checkAiChecksRefine.Checked;
             Program.Settings.DazzleSendChecksChat = checkAiChecksChat.Checked;
             Program.Settings.DazzleRulesFraming = string.IsNullOrWhiteSpace(textAiRulesFraming.Text) ? DazzleContext.DefaultRulesFraming : textAiRulesFraming.Text.Trim();
-            Program.Settings.DazzleChecksFraming = string.IsNullOrWhiteSpace(textAiChecksFraming.Text) ? DazzleContext.DefaultChecksFraming : textAiChecksFraming.Text.Trim();
+            Program.Settings.DazzleUnwantedFraming = string.IsNullOrWhiteSpace(textAiChecksFraming.Text) ? DazzleContext.DefaultUnwantedFraming : textAiChecksFraming.Text.Trim();
         }
     }
 }

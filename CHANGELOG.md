@@ -6,6 +6,26 @@ Versions continue from the BooruDatasetTagManager release this project is based 
 
 ## [Unreleased]
 
+## [2.14.4] - 2026-10-03
+
+### Added
+
+- **The Review pane's rules grid grows to show every rule.** When you add a rule, or open a folder that has rules, the grid gets taller so all of them and the empty row for the next one are in view, at most two thirds of the middle column. The Check for box keeps its height; the room comes from the tags box below. A grid you made taller yourself is never shrunk.
+- **Double-click the handle under an AI skill** (AI Refine and AI Chat) to fit the skill box to its whole text, at most two thirds of the middle column. Double-click again to return it to the height it had. The panel under the skill box (Refine's current caption | proposal, Chat's result) keeps its height; the room comes from the box below.
+
+- **Settings > UI, "When the window is resized":** *Only the box at the bottom changes height* (the default) or *Every pane keeps its share of the height*, for the middle column in Review, AI Refine and AI Chat.
+
+### Changed
+
+- Restoring a maximized window no longer squashes AI Refine's current caption | proposal area (or Chat's result panel) to nothing. By default the skill box and the panel under it keep their height and the box at the bottom (the tags text | grid, or the chat transcript) takes the change. The bottom box always keeps a few lines; when the panes above must shrink, the skill box and the panel under it shrink together.
+- AI Refine's current caption | proposal area starts 20 pixels taller.
+- Dragging the handle under an AI skill no longer squashes the panel under it: that panel keeps its height and the handle below it moves by the same amount, so there is no second handle to drag back.
+
+- Preview Extracted Info groups a file format's own blocks under one heading for the format. A PNG's PNG-IHDR, PNG-pHYs, PNG-gAMA, PNG-sRGB and other chunks now appear under **PNG** as *Image header (IHDR)*, *Pixel size (pHYs)*, *Gamma (gAMA)*, *Colour space (sRGB)* and so on; JPEG, GIF, WebP and BMP get the same treatment. Generation, EXIF, XMP, IPTC, the PNG text chunks and the ICC colour profile stay at the top, first, because they describe the image whatever its format. A format with a single block shows it as one group, and a block the tool does not recognise still appears at the top under its own name. (#14)
+- **Only what applies to the image is sent to the model.** When you choose to send the folder's rules, only the rules whose left side the caption has go with the request ("rules (1 of 3 apply to this image)"). When you choose to send the Check for list, only its unwanted `-tags` go, as a list of tags to leave out and remove. Measured against the loaded model, a tag named in a list that did not apply leaked into the reply: "long hair" from a `1girl => long hair` rule on an image without 1girl, and a false "1girl" from the Check for list on a male demon in 6 of 10 replies. With only what applies sent, neither leaked. The positive Check for tags stay your checklist on screen; a skill that writes `{checks}` still gets the whole list.
+- The default sentence that frames the rules now spells out the dash marker: a leading dash before a tag (for example `-BadTag`) means the tag must be absent. A setting that already holds the old sentence keeps it; **Reset** beside the box on Settings > AI loads the new one. The unwanted tags have their own new sentence, "Unwanted tags for this dataset: never include them, and remove any the current caption has."
+- Settings > AI: the two "framed by" boxes show five lines, so each default sentence can be read whole, and their Reset buttons stay inside the dialog.
+
 ## [2.14.3] - 2026-10-02
 
 ### Added

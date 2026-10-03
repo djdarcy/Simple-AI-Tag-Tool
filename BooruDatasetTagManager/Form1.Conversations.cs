@@ -219,7 +219,7 @@ namespace BooruDatasetTagManager
             Environment.GetEnvironmentVariable("SATT_LMSTUDIO_DIR") is string d && d.Trim().Length > 0 ? d.Trim()
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".lmstudio", "conversations");
 
-        /// <summary>Where exports go (the person, 2026-10-02 20:52): LM Studio's folder, a simple-ai-tag-tool folder, and one per dataset root.</summary>
+        /// <summary>Where exports go (djdarcy, 2026-10-02 20:52): LM Studio's folder, a simple-ai-tag-tool folder, and one per dataset root.</summary>
         private string ExportFolder() =>
             Path.Combine(LmStudioConversations, "simple-ai-tag-tool", SafeName(Path.GetFileName((dazzleDatasetFolder ?? "dataset").TrimEnd('\\', '/'))));
 

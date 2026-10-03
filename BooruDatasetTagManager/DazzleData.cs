@@ -11,7 +11,7 @@ namespace BooruDatasetTagManager
     /// skills folders read through it, and the per-image store choice. Every consumer that used to compose a path
     /// under Program.AppPath asks here instead; nothing here knows a form.
     ///
-    /// Tiers (user, 2026-10-02): Portable (beside the exe, enabled by a "portable" marker file beside it), Home
+    /// Tiers (djdarcy, 2026-10-02): Portable (beside the exe, enabled by a "portable" marker file beside it), Home
     /// (~\.satt, the installed default), Documents (%USERPROFILE%\Documents\Simple-AI-Tag-Tool, the person's own
     /// files, read last). The base is Portable or Home; the other is read when the base lacks something.
     /// </summary>
@@ -67,7 +67,7 @@ namespace BooruDatasetTagManager
         }
 
         /// <summary>
-        /// Switch the base live (the person, 2026-10-02: "Live"): portable on writes the "portable" marker beside the exe,
+        /// Switch the base live (djdarcy, 2026-10-02: "Live"): portable on writes the "portable" marker beside the exe,
         /// off removes it; the layout is rebuilt; the running settings are written to the new base, a settings file already
         /// there kept beside it as settings.before-switch-<time>.json; the recent folders follow. Returns one line per
         /// thing done or refused, for the status line and the log; never throws.

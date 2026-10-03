@@ -89,15 +89,18 @@ namespace BooruDatasetTagManager
         public string DazzleRefineDefaultSkill { get; set; } = "";   // "" = the skill used last
         public string DazzleChatDefaultSkill { get; set; } = "";
         public int DazzleChatTrimPercent { get; set; } = 75;         // above this share of the loaded context, the oldest turns are dropped
-        public bool DazzleSendRulesRefine { get; set; } = false;     // context sent automatically: all off by default (the person, 2026-10-02 20:02)
+        public bool DazzleSendRulesRefine { get; set; } = false;     // context sent automatically: all off by default (djdarcy, 2026-10-02 20:02)
         public bool DazzleSendChecksRefine { get; set; } = false;
         public bool DazzleSendRulesChat { get; set; } = false;
         public bool DazzleSendChecksChat { get; set; } = false;
         public string DazzleRulesFraming { get; set; } = DazzleContext.DefaultRulesFraming;
-        public string DazzleChecksFraming { get; set; } = DazzleContext.DefaultChecksFraming;
+        // frames only the Check for list's unwanted tags; it replaced DazzleChecksFraming, whose sentence framed the whole
+        // list (djdarcy, 2026-10-03). No migration: the old key is ignored on load, and the one install holding it is djdarcy's.
+        public string DazzleUnwantedFraming { get; set; } = DazzleContext.DefaultUnwantedFraming;
         public string DazzleSettingsTab { get; set; } = "";          // Settings reopens on the tab used last
+        public int DazzleResizeMode { get; set; } = 0;               // window resized: 0 the tags box below takes the change, 1 every pane keeps its share
         public bool DazzleKeepConversations { get; set; } = true;    // each image's AI Chat conversation and AI Refine run kept on disk (#5)
-        public bool DazzleChatFromRefine { get; set; } = true;       // a chat on a refined image starts from the Refine run (the person, 2026-10-02 20:52)
+        public bool DazzleChatFromRefine { get; set; } = true;       // a chat on a refined image starts from the Refine run (djdarcy, 2026-10-02 20:52)
 
         /// <summary>Point the settings file at another folder (the data base moved); the next SaveSettings writes there.</summary>
         public void DazzleRetarget(string dir) => settingsFile = Path.Combine(dir, "settings.json");
@@ -208,8 +211,9 @@ namespace BooruDatasetTagManager
                 DazzleSendRulesChat = tempSettings.DazzleSendRulesChat;
                 DazzleSendChecksChat = tempSettings.DazzleSendChecksChat;
                 DazzleRulesFraming = string.IsNullOrWhiteSpace(tempSettings.DazzleRulesFraming) ? DazzleContext.DefaultRulesFraming : tempSettings.DazzleRulesFraming;
-                DazzleChecksFraming = string.IsNullOrWhiteSpace(tempSettings.DazzleChecksFraming) ? DazzleContext.DefaultChecksFraming : tempSettings.DazzleChecksFraming;
+                DazzleUnwantedFraming = string.IsNullOrWhiteSpace(tempSettings.DazzleUnwantedFraming) ? DazzleContext.DefaultUnwantedFraming : tempSettings.DazzleUnwantedFraming;
                 DazzleSettingsTab = tempSettings.DazzleSettingsTab ?? "";
+                DazzleResizeMode = tempSettings.DazzleResizeMode == 1 ? 1 : 0;
                 DazzleKeepConversations = tempSettings.DazzleKeepConversations;
                 DazzleChatFromRefine = tempSettings.DazzleChatFromRefine;
                 LoadSettingsLoadPreviewImages = tempSettings.LoadSettingsLoadPreviewImages;

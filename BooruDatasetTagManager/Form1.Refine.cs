@@ -117,10 +117,10 @@ namespace BooruDatasetTagManager
             comboSkills.SelectedIndexChanged += SkillsSelectionChanged;
             buttonSaveSkill = new ToolStripButton("Save as...") { ToolTipText = "Save the instruction text as a new skill file" };
             buttonSaveSkill.Click += (s, e) => SaveSkillAs();
-            // the strip's own tips are one long line that hides after a few seconds (user, 2026-10-02): a wrapped block
+            // the strip's own tips are one long line that hides after a few seconds (djdarcy, 2026-10-02): a wrapped block
             // shown for 20 s instead, attached per item below once the items exist
             strip.ShowItemToolTips = false;
-            // Play and Stop as the glyphs everyone knows, drawn here so they follow the DPI and need no resource file (user, 2026-10-02)
+            // Play and Stop as the glyphs everyone knows, drawn here so they follow the DPI and need no resource file (djdarcy, 2026-10-02)
             buttonPlay = new ToolStripButton { Name = "buttonPlay", Text = "Play", Image = PlayGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, ToolTipText = "Play: send the image, the instruction and the current caption to the model" };
             buttonPlay.Click += async (s, e) => await RunRefineAsync();
             buttonStop = new ToolStripButton { Name = "buttonStop", Text = "Stop", Image = StopGlyph(), DisplayStyle = ToolStripItemDisplayStyle.Image, ImageScaling = ToolStripItemImageScaling.None, Enabled = false, ToolTipText = "Stop: cancel the run (the server stops generating when the connection closes)" };
@@ -142,7 +142,7 @@ namespace BooruDatasetTagManager
             foreach (ToolStripItem it in strip.Items) if (!string.IsNullOrEmpty(it.ToolTipText)) AttachBlockTip(strip, it, it.ToolTipText);
 
             var gridFont = Program.Settings.GridViewFont.GetFont();
-            // sizes follow the font, not pixel constants: at 144 dpi a 64-px box showed two lines of a five-line skill (user, 2026-10-02)
+            // sizes follow the font, not pixel constants: at 144 dpi a 64-px box showed two lines of a five-line skill (djdarcy, 2026-10-02)
             textInstruction = new TextBox { Name = "textInstruction", Multiline = true, Dock = DockStyle.Top, Height = gridFont.Height * 5 + 10, ScrollBars = ScrollBars.Vertical, AcceptsReturn = true, Font = gridFont };
             textInstruction.TextChanged += (s, e) => { if (textInstruction.Text != loadedSkillText) labelRefineStatus.Text = "instruction edited (Save as... to keep it as a skill)"; };
             // auto-sized, docked labels wrap to the pane's width instead of clipping
@@ -157,7 +157,7 @@ namespace BooruDatasetTagManager
             splitSides.Panel2.Controls.Add(flowRight); splitSides.Panel2.Controls.Add(labelRight);
             flowLeft.Resize += (s, e) => FitChipWidths(flowLeft);
             flowRight.Resize += (s, e) => FitChipWidths(flowRight);
-            // double-buffer the chip columns and their panels: re-laying out dozens of labels flickered (user, 2026-10-02)
+            // double-buffer the chip columns and their panels: re-laying out dozens of labels flickered (djdarcy, 2026-10-02)
             foreach (var c in new Control[] { flowLeft, flowRight, splitSides.Panel1, splitSides.Panel2, panelRefine })
                 typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(c, true);
 
@@ -168,16 +168,17 @@ namespace BooruDatasetTagManager
             buttonTakeLeft.Click += (s, e) => { if (currentDiff != null) AcceptCaption(string.Join(", ", currentDiff.Left.Select(i => i.Text)), "kept the current caption"); };
             buttonTakeRight.Click += (s, e) => { if (currentDiff != null) AcceptCaption(string.Join(", ", currentDiff.Right.Select(i => i.Text)), "took the proposal"); };
             buttonApplyChips.Click += (s, e) => { if (currentDiff != null) AcceptCaption(DazzleCaptionDiff.Compose(currentDiff, droppedRight, keptLeft), "applied the chip choices"); };
-            // keep every current tag and add only what the proposal adds (the person, 2026-10-02); a dropped chip stays out
+            // keep every current tag and add only what the proposal adds (djdarcy, 2026-10-02); a dropped chip stays out
             buttonKeepAndAdd = new Button { Name = "buttonKeepAndAdd", Text = "Keep current + add new", AutoSize = true, Enabled = false };
             buttonKeepAndAdd.Click += (s, e) => { if (currentDiff != null) AcceptCaption(DazzleCaptionDiff.ComposeAppend(currentDiff, droppedRight), "kept the current caption and added the proposal's new items"); };
             buttons.Controls.AddRange(new Control[] { buttonTakeRight, buttonApplyChips, buttonKeepAndAdd, buttonTakeLeft });
             // a click on the chip area or the buttons hands the keyboard back to the dataset list
             foreach (var c in new Control[] { flowLeft, flowRight, buttons }) c.MouseUp += (s, e) => gridViewDS.Focus();
 
-            // the instruction box over the rest, with a draggable splitter so it can be pulled taller (user, 2026-10-02); remembered
+            // the instruction box over the rest, with a draggable splitter so it can be pulled taller (djdarcy, 2026-10-02); remembered
             textInstruction.Dock = DockStyle.Fill;
-            // FixedPanel.Panel1: the instruction keeps its height and the chip area takes the rest when the pane resizes
+            // FixedPanel.Panel1: the instruction keeps its height when the middle splitter moves (a drag, or the chip area's fit);
+            // when the window itself is resized it keeps its share instead (LinkSkillSplitter)
             splitInstruction = new SplitContainer { Name = "splitInstruction", Dock = DockStyle.Fill, Orientation = Orientation.Horizontal, SplitterWidth = 5, Panel1MinSize = gridFont.Height * 2, Panel2MinSize = 80, FixedPanel = FixedPanel.Panel1 };
             splitInstruction.Resize += (s, e) => { if (!instructionSplitPlaced && splitInstruction.Height >= 120) { instructionSplitPlaced = true; PlaceInstructionSplitter(); } };
             splitInstruction.Panel1.Controls.Add(textInstruction);
@@ -185,6 +186,8 @@ namespace BooruDatasetTagManager
             splitInstruction.Panel2.Controls.Add(buttons);
             splitInstruction.Panel2.Controls.Add(labelRefineStatus);
             splitInstruction.SplitterMoved += (s, e) => { if (!placingInstructionSplit && panelRefine.Visible) Program.Settings.DazzleRefineInstructionHeight = splitInstruction.SplitterDistance; };
+            LinkSkillSplitter(splitInstruction, textInstruction, () => labelRefineContext);
+            ApplyResizeMode();
             panelRefine.Controls.Add(splitInstruction);
             panelRefine.Controls.Add(strip);
             // an edit to the caption box shows on the left side as it is typed: at once after a comma or a space, else after a pause
@@ -209,7 +212,7 @@ namespace BooruDatasetTagManager
         private bool autoFittingMiddle, userMovedMiddle;
 
         /// <summary>
-        /// Two phases (user, 2026-10-02). Before a proposal: the chip area is just tall enough for the current
+        /// Two phases (djdarcy, 2026-10-02). Before a proposal: the chip area is just tall enough for the current
         /// caption's chips and the text box below gets everything else, so there is room to type. After a run: the
         /// chip area grows to fit both sides as room permits, the text box keeping the height its lines need (four
         /// at least). Runs when the Refine pane renders; a drag by the user holds until the next image.
@@ -224,9 +227,9 @@ namespace BooruDatasetTagManager
             chipsNeed = Math.Max(chipsNeed + chipRow / 2, 2 * chipRow);   // slack for the panel's padding; never under two rows
             // everything in the top half except the chip columns: the Review | Refine strip, the Refine strip, the
             // instruction box, the status line, the buttons -- measured from the pane, not from panelRefine alone
-            // (that left out the mode strip and collapsed the columns to half a row; user, 2026-10-02)
+            // (that left out the mode strip and collapsed the columns to half a row; djdarcy, 2026-10-02)
             int chrome = splitMiddle.Panel1.Height - splitSides.Height + Math.Max(labelLeft.Height, labelRight.Height);
-            int topNeed = chrome + chipsNeed + 8;
+            int topNeed = chrome + chipsNeed + 8 + LogicalToDeviceUnits(20);   // 20 px of breathing room for the chips (djdarcy, 2026-10-03)
             int lines = textBoxTags.GetLineFromCharIndex(Math.Max(0, textBoxTags.TextLength)) + 1;
             int captionNeed = tabsTags.ItemSize.Height + 16 + Math.Max(4, lines + 1) * textBoxTags.Font.Height;
             int available = splitMiddle.Height - splitMiddle.SplitterWidth;
@@ -248,6 +251,167 @@ namespace BooruDatasetTagManager
             placingInstructionSplit = true;
             try { splitInstruction.SplitterDistance = want; } catch (Exception) { }
             finally { placingInstructionSplit = false; }
+        }
+
+        // ---------------------------------------------------------------- the skill box's splitter
+        // Growing the skill box takes its room from the box below the middle splitter (the tags text | grid in Refine, the
+        // transcript in Chat), so the panel under the skill box -- Refine's caption | proposal, Chat's result -- keeps its
+        // height; it used to be squashed, and had to be dragged back. A double-click on the skill splitter fits the box to its
+        // text, at most two thirds of the middle column; a second double-click returns it to the height it had (djdarcy, 2026-10-03).
+        // When the window itself is resized (maximize, restore, a drag of its edge), the middle splitter scales and the skill
+        // box keeps its share of the pane, so the panel under it is not squashed; restoring a maximized window used to leave
+        // the caption | proposal area at its minimum (djdarcy, 2026-10-03). A move of the middle splitter, by a drag or by the
+        // chip area's fit, still leaves the skill box's height alone.
+        private sealed class SkillSplit { public int DragStart = -1, DragKeep = -1, Compact = -1, Fitted = -1; public bool Linking; public double Share = -1; }
+
+        /// <summary>
+        /// The window's resize rule for the middle column (Settings > UI, djdarcy, 2026-10-03): by default the box at the bottom
+        /// (the tags text | grid, or Chat's transcript) takes the change and the panes above keep their height; or every pane
+        /// keeps its share. Either way the bottom box keeps a few lines, and when the panes above must shrink, the skill box and
+        /// the panel under it shrink together (LinkSkillSplitter).
+        /// </summary>
+        private void ApplyResizeMode()
+        {
+            if (splitMiddle == null) return;
+            // the splitters keep their pixels while the window resizes; the settle step afterwards applies the chosen rule.
+            // (A proportional SplitContainer left the panes above smaller than their share after a restore.)
+            splitMiddle.FixedPanel = FixedPanel.Panel1;
+            if (middleResizeWired) return;
+            middleResizeWired = true;
+            splitMiddle.SplitterMoved += (s, e) => RememberMiddleShare();
+            SizeChanged += (s, e) => { if (WindowState != FormWindowState.Minimized) BeginInvoke(new Action(SettleAfterResize)); };
+            // the starting point: the size and shares once the window is first shown and laid out
+            Shown += (s, e) => BeginInvoke(new Action(() => { settledClientSize = ClientSize; RememberMiddleShare(); foreach (var r in skillShareRememberers) r(); }));
+        }
+        private readonly List<Action> skillShareRememberers = new List<Action>();
+
+        private void RememberMiddleShare()
+        {
+            if (CanRememberShares()) middleShare = splitMiddle.SplitterDistance / (double)(splitMiddle.Height - splitMiddle.SplitterWidth);
+        }
+        private bool middleResizeWired, settlingResize;
+        private Size settledClientSize;
+        private double middleShare = -1;
+        private readonly List<Action> skillShareSettlers = new List<Action>();
+
+        /// <summary>Shares are remembered from moves made at a settled window size, never from the steps of a resize.</summary>
+        private bool CanRememberShares() =>
+            !settlingResize && WindowState != FormWindowState.Minimized && splitMiddle != null && splitMiddle.Height >= 200
+            && (settledClientSize.IsEmpty || ClientSize == settledClientSize);
+
+        /// <summary>Once a resize of the window has settled: the middle splitter by the chosen rule, a floor under the box at the bottom, then each skill box's share.</summary>
+        private void SettleAfterResize()
+        {
+            if (WindowState == FormWindowState.Minimized || splitMiddle == null || splitMiddle.Height < 200 || ClientSize == settledClientSize) return;
+            bool first = settledClientSize.IsEmpty;
+            settledClientSize = ClientSize;
+            if (first) return;   // the first size seen is the starting point, not a change
+            settlingResize = true;
+            try
+            {
+                int span = splitMiddle.Height - splitMiddle.SplitterWidth;
+                int want = Program.Settings.DazzleResizeMode == 1 && middleShare > 0 ? (int)Math.Round(middleShare * span) : splitMiddle.SplitterDistance;
+                int max = span - Math.Max(splitMiddle.Panel2MinSize, LogicalToDeviceUnits(140));   // the box at the bottom keeps a few lines
+                want = Math.Max(splitMiddle.Panel1MinSize, Math.Min(want, max));
+                if (want != splitMiddle.SplitterDistance) try { splitMiddle.SplitterDistance = want; } catch (Exception) { }
+                foreach (var settle in skillShareSettlers) settle();
+            }
+            finally { settlingResize = false; }
+        }
+
+        private void LinkSkillSplitter(SplitContainer inner, TextBoxBase box, Func<Control> footer)
+        {
+            var st = new SkillSplit();
+            // the share is remembered when a splitter is moved (by the person or in code) and re-applied once a resize of the
+            // window has settled; a restore resizes the pane in several steps, and remembering at each one kept a squashed share
+            void Remember() { if (inner.Visible && inner.Height >= 60 && CanRememberShares()) st.Share = inner.SplitterDistance / (double)(inner.Height - inner.SplitterWidth); }
+            void Settle()
+            {
+                if (!inner.Visible || inner.Height < 60) return;
+                if (st.Share <= 0) { Remember(); return; }
+                bool was = st.Linking; st.Linking = true;   // the skill box keeps its share of the pane
+                try { inner.SplitterDistance = Math.Max(inner.Panel1MinSize, Math.Min((int)Math.Round(st.Share * (inner.Height - inner.SplitterWidth)), inner.Height - inner.Panel2MinSize - inner.SplitterWidth)); }
+                catch (Exception) { }
+                finally { st.Linking = was; }
+            }
+            inner.SplitterMoved += (s, e) => Remember();
+            splitMiddle.SplitterMoved += (s, e) => Remember();
+            skillShareSettlers.Add(Settle); skillShareRememberers.Add(Remember);
+            // a pane hidden during a resize (Chat while in Refine) is laid out when it is shown again
+            inner.VisibleChanged += (s, e) => { if (inner.Visible) BeginInvoke(new Action(Settle)); };
+            // a drag by the person runs from a mouse-down on the splitter to the mouse-up; placements in code are not followed
+            inner.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left && inner.SplitterRectangle.Contains(e.Location)) { st.DragStart = inner.SplitterDistance; st.DragKeep = inner.Panel2.Height; } };
+            inner.MouseUp += (s, e) => BeginInvoke(new Action(() => st.DragStart = -1));   // after the SplitterMoved the release raises
+            inner.SplitterMoved += (s, e) =>
+            {
+                if (st.Linking || st.DragStart < 0) return;
+                int delta = inner.SplitterDistance - st.DragStart, keep = st.DragKeep; st.DragStart = inner.SplitterDistance; st.Fitted = -1;
+                // after the splitter has finished its own layout (moved inside its SplitterMoved, the pane's growth was lost); the
+                // panel under the box is then set back to the height it had when the drag began
+                if (delta != 0) BeginInvoke(new Action(() =>
+                {
+                    bool was = st.Linking; st.Linking = true;
+                    try
+                    {
+                        MoveMiddleSplitter(splitMiddle.SplitterDistance + delta, st);
+                        inner.SplitterDistance = Math.Max(inner.Panel1MinSize, Math.Min(inner.Height - inner.SplitterWidth - keep, inner.Height - inner.Panel2MinSize - inner.SplitterWidth));
+                    }
+                    catch (Exception) { }
+                    finally { st.Linking = was; }
+                }));
+            };
+            inner.MouseDoubleClick += (s, e) =>
+            {
+                if (!inner.SplitterRectangle.Contains(e.Location)) return;
+                st.DragStart = -1;
+                if (st.Fitted >= 0 && Math.Abs(inner.SplitterDistance - st.Fitted) <= 6 && st.Compact >= 0)
+                {
+                    SetSkillHeight(inner, st.Compact, st); st.Fitted = -1;
+                    return;
+                }
+                st.Compact = inner.SplitterDistance;
+                var f = footer();
+                int lines = box.GetLineFromCharIndex(Math.Max(0, box.TextLength)) + 1;
+                int fit = lines * box.Font.Height + (box.Height - box.ClientSize.Height) + 8 + (f != null && f.Visible ? f.Height : 0);
+                SetSkillHeight(inner, Math.Min(fit, splitMiddle.Height * 2 / 3), st);
+                st.Fitted = inner.SplitterDistance;
+            };
+        }
+
+        /// <summary>Set the skill box's height; the middle splitter moves by the same amount, so the panel under the box keeps its own.</summary>
+        private void SetSkillHeight(SplitContainer inner, int target, SkillSplit st)
+        {
+            int delta = target - inner.SplitterDistance;
+            if (delta == 0) return;
+            int keep = inner.Panel2.Height;   // the panel under the box, in pixels, whatever the splitter's FixedPanel
+            st.Linking = true;
+            try
+            {
+                if (delta > 0)
+                {
+                    // room below: the bottom box keeps a few lines at least; the growth stops there rather than squash the panel under the skill box
+                    int bottomMin = Math.Max(splitMiddle.Panel2MinSize, LogicalToDeviceUnits(140));
+                    int room = splitMiddle.Height - splitMiddle.SplitterWidth - bottomMin - splitMiddle.SplitterDistance;
+                    delta = Math.Min(delta, Math.Max(0, room));
+                    if (delta == 0) return;
+                }
+                MoveMiddleSplitter(splitMiddle.SplitterDistance + delta, st);   // the pane grows or shrinks by delta
+                inner.SplitterDistance = Math.Max(inner.Panel1MinSize, Math.Min(inner.Height - inner.SplitterWidth - keep, inner.Height - inner.Panel2MinSize - inner.SplitterWidth));
+            }
+            catch (Exception) { }
+            finally { st.Linking = false; }
+        }
+
+        private void MoveMiddleSplitter(int distance, SkillSplit st)
+        {
+            bool was = st.Linking; st.Linking = true;
+            try
+            {
+                distance = Math.Max(splitMiddle.Panel1MinSize, Math.Min(distance, splitMiddle.Height - splitMiddle.Panel2MinSize - splitMiddle.SplitterWidth));
+                if (distance != splitMiddle.SplitterDistance) splitMiddle.SplitterDistance = distance;
+            }
+            catch (Exception) { }
+            finally { st.Linking = was; }
         }
 
         private ToolTip blockTip;
@@ -288,7 +452,7 @@ namespace BooruDatasetTagManager
                 blockTip.Hide(strip);
             }
             item.MouseLeave += hideNow;
-            // a click means the person is done reading: the tip must not sit over a dropdown or a dialog (user, 2026-10-02)
+            // a click means the person is done reading: the tip must not sit over a dropdown or a dialog (djdarcy, 2026-10-02)
             item.MouseDown += (s, e) => hideNow(s, e);
             if (item is ToolStripComboBox combo) combo.DropDown += hideNow;
         }
@@ -428,7 +592,7 @@ namespace BooruDatasetTagManager
             if (now != null && !string.Equals(now, lastSkillName, StringComparison.OrdinalIgnoreCase)) LoadSelectedSkill();
         }
 
-        // the two actions at the end of the dropdown (user, 2026-10-02: a way to load any text file, and to reach the folder for a real editor)
+        // the two actions at the end of the dropdown (djdarcy, 2026-10-02: a way to load any text file, and to reach the folder for a real editor)
         private const string LoadFileEntry = "...  Load a file...";
         private const string OpenFolderEntry = "...  Open skills folder...";
         private string lastSkillName;
@@ -527,7 +691,7 @@ namespace BooruDatasetTagManager
 
                 var (bytes, mime, note) = DazzleLmStudio.PrepareImage(imagePath, Program.Settings.DazzleRefineImageLongSide);
                 // Only the skill and the caption go with the image. The folder's rules and the Check for list are no longer
-                // sent automatically (user, 2026-10-02: the model read the Check for list as tags to add); sending them
+                // sent automatically (djdarcy, 2026-10-02: the model read the Check for list as tags to add); sending them
                 // becomes the person's choice on Settings > AI, or a placeholder the skill places itself.
                 var user = new StringBuilder();
                 user.Append("Current caption:\n").Append(leftCaption.Length > 0 ? leftCaption : "(none)");
@@ -658,7 +822,7 @@ namespace BooruDatasetTagManager
 
         private Font chipFont;
 
-        /// <summary>A size and a half under the grid font, tight padding: a real caption can run to hundreds of items (user, 2026-10-02).</summary>
+        /// <summary>A size and a half under the grid font, tight padding: a real caption can run to hundreds of items (djdarcy, 2026-10-02).</summary>
         private Font ChipFont()
         {
             var g = Program.Settings.GridViewFont.GetFont();
@@ -676,7 +840,7 @@ namespace BooruDatasetTagManager
                 Text = item.Text, Tag = index, ForeColor = MarkFore, Font = ChipFont(),
             };
             // the wrap width is set by FitChipWidths from the column's real width, not here: at creation the column
-            // may not be laid out yet, and a cap taken then wrapped "sherlock-holmes" mid-word (user, 2026-10-02)
+            // may not be laid out yet, and a cap taken then wrapped "sherlock-holmes" mid-word (djdarcy, 2026-10-02)
             chip.BackColor = item.Kind switch
             {
                 DazzleCaptionDiff.Kind.Added => GoodBack,

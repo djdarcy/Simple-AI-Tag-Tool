@@ -152,7 +152,7 @@ namespace BooruDatasetTagManager
         }
 
         /// <summary>
-        /// Keep current + add new (the person, 2026-10-02): every item of the current caption as it stands, in its
+        /// Keep current + add new (djdarcy, 2026-10-02): every item of the current caption as it stands, in its
         /// order, then the proposal's added items, minus any chip dropped. Items the two share are not repeated, and an
         /// item the proposal rewrote keeps the current wording.
         /// </summary>

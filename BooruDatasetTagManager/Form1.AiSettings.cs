@@ -33,7 +33,8 @@ namespace BooruDatasetTagManager
         private void ApplyAiSettings(AiSnapshot before)
         {
             var notes = new List<string>();
-            // the base, live (the person, 2026-10-02 20:02: "Live")
+            ApplyResizeMode();   // Settings > UI: what takes the change when the window is resized
+            // the base, live (djdarcy, 2026-10-02 20:02: "Live")
             if (Program.Settings.DazzleDataPortable != before.Portable)
                 notes.AddRange(DazzleData.SwitchBase(Program.Settings.DazzleDataPortable, Program.Settings, Program.RecentFolders));
             Program.Settings.DazzleDataPortable = DazzleData.IsPortable;   // a refused switch leaves the setting telling the truth
@@ -112,9 +113,9 @@ namespace BooruDatasetTagManager
 
         private ToolStripDropDownButton MakeContextButton(string name, out ToolStripMenuItem rules, out ToolStripMenuItem checks, Action<bool, bool> changed)
         {
-            var b = new ToolStripDropDownButton("Context") { Name = name, ToolTipText = "Context: what goes to the model besides the image, the skill and the caption -- the folder's rules and the Check for list, each with the framing sentence set on Settings > AI. Ticks here hold for this session; the defaults are on Settings > AI." };
-            var r = new ToolStripMenuItem("Send the folder's rules") { CheckOnClick = true };
-            var c = new ToolStripMenuItem("Send the Check for list") { CheckOnClick = true };
+            var b = new ToolStripDropDownButton("Context") { Name = name, ToolTipText = "Context: what goes to the model besides the image, the skill and the caption -- the folder's rules that apply to this image, and the unwanted (-tag) entries of the Check for list, each with the framing sentence set on Settings > AI. Ticks here hold for this session; the defaults are on Settings > AI." };
+            var r = new ToolStripMenuItem("Send the folder's rules that apply") { CheckOnClick = true };
+            var c = new ToolStripMenuItem("Send the unwanted tags (Check for's -tags)") { CheckOnClick = true };
             r.CheckedChanged += (s, e) => { changed(r.Checked, c.Checked); UpdateContextLines(); };
             c.CheckedChanged += (s, e) => { changed(r.Checked, c.Checked); UpdateContextLines(); };
             b.DropDownItems.AddRange(new ToolStripItem[] { r, c });
@@ -150,6 +151,7 @@ namespace BooruDatasetTagManager
             }
             ResetContextChoices();
             if (textBoxCheck != null) textBoxCheck.TextChanged += (s, e) => UpdateContextLines();
+            if (textBoxTags != null) textBoxTags.TextChanged += (s, e) => UpdateContextLines();   // which rules apply follows the caption
             UpdateContextLines();
         }
 
@@ -159,15 +161,29 @@ namespace BooruDatasetTagManager
         private List<string> ActiveRuleLines() =>
             folderRules.Where(r => r.Error == null && !r.IsComment && !r.IsEmpty).Select(r => r.Line).ToList();
 
+        /// <summary>
+        /// The rules a model is sent: only those whose condition the current caption meets (an unconditional rule always applies).
+        /// A rule that does not apply carries no instruction for this image, only tag names that leak into the reply: with
+        /// `1girl => long hair` in the list and no 1girl in the caption, "long hair" appeared in 2 of 10 replies, and in 0 of 10
+        /// with only the applying rule sent (tools\framing-check.py, djdarcy, 2026-10-03). The proposal is still checked against
+        /// every rule afterwards, so a rule set off by a tag the model adds is not missed.
+        /// </summary>
+        private List<string> ApplicableRuleLines()
+        {
+            if (folderRules.Count == 0) return new List<string>();
+            var tags = new DazzleRules.TagSet(Tokenize(textBoxTags?.Text ?? "", TagSeparators()).Select(r => r.Text), Program.Settings.DazzleTagMatch);
+            return DazzleRules.Evaluate(folderRules, tags).Rules.Where(r => r.Active).Select(r => r.Rule.Line).ToList();
+        }
+
         private void UpdateContextLines()
         {
-            int rules = ActiveRuleLines().Count, checks = DazzleContext.CheckCount(textBoxCheck?.Text);
+            int rules = ActiveRuleLines().Count, applying = rules == 0 ? 0 : ApplicableRuleLines().Count, checks = DazzleContext.Unwanted(textBoxCheck?.Text).Count;
             if (labelRefineContext != null)
                 labelRefineContext.Text = DazzleContext.Describe(refineSendRules, rules, refineSendChecks, checks,
-                    DazzleContext.SkillPlaces(textInstruction.Text, "rules"), DazzleContext.SkillPlaces(textInstruction.Text, "checks"));
+                    DazzleContext.SkillPlaces(textInstruction.Text, "rules"), DazzleContext.SkillPlaces(textInstruction.Text, "checks"), applying);
             if (labelChatContext != null)
                 labelChatContext.Text = DazzleContext.Describe(chatSendRules, rules, chatSendChecks, checks,
-                    DazzleContext.SkillPlaces(textChatInstruction.Text, "rules"), DazzleContext.SkillPlaces(textChatInstruction.Text, "checks")).Replace("the caption", "the conversation");
+                    DazzleContext.SkillPlaces(textChatInstruction.Text, "rules"), DazzleContext.SkillPlaces(textChatInstruction.Text, "checks"), applying).Replace("the caption", "the conversation");
         }
 
         /// <summary>The automatic context for a request, framed; "" when nothing is chosen. A piece the skill places itself is left out.</summary>
@@ -176,12 +192,12 @@ namespace BooruDatasetTagManager
             var parts = new List<string>();
             if (rules && !DazzleContext.SkillPlaces(skillText, "rules"))
             {
-                string b = DazzleContext.RulesBlock(ActiveRuleLines(), Program.Settings.DazzleRulesFraming);
+                string b = DazzleContext.RulesBlock(ApplicableRuleLines(), Program.Settings.DazzleRulesFraming);
                 if (b.Length > 0) parts.Add(b);
             }
             if (checks && !DazzleContext.SkillPlaces(skillText, "checks"))
             {
-                string b = DazzleContext.ChecksBlock(textBoxCheck?.Text, Program.Settings.DazzleChecksFraming);
+                string b = DazzleContext.UnwantedBlock(textBoxCheck?.Text, Program.Settings.DazzleUnwantedFraming);
                 if (b.Length > 0) parts.Add(b);
             }
             return string.Join("\n\n", parts);

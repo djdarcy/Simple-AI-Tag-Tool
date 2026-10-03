@@ -62,7 +62,7 @@ namespace BooruDatasetTagManager
                                                       () => string.Join(Environment.NewLine, listInfo.Items.Cast<ListViewItem>().Select(i => i.Text + ": " + i.SubItems[1].Text)));
             listInfo.Resize += (s, e) => { if (listInfo.Columns.Count == 2) listInfo.Columns[1].Width = Math.Max(200, listInfo.ClientSize.Width - listInfo.Columns[0].Width - 4); };
             // the File name row is editable in place: double-click (or the menu); the rename goes through the same
-            // journaled operation Chat uses, so the caption file follows and Undo last change reverses it (user, 2026-10-02)
+            // journaled operation Chat uses, so the caption file follows and Undo last change reverses it (djdarcy, 2026-10-02)
             listInfo.MouseDoubleClick += (s, e) => { var hit = listInfo.HitTest(e.Location); if (hit.Item != null && hit.Item.Text == "File name") BeginRenameInPlace(hit.Item); };
             listInfo.ContextMenuStrip.Items.Insert(0, new ToolStripMenuItem("Rename file...", null, (s, e) => { var row = listInfo.Items.Cast<ListViewItem>().FirstOrDefault(i => i.Text == "File name"); if (row != null) BeginRenameInPlace(row); }));
             listInfo.ContextMenuStrip.Items.Insert(1, new ToolStripSeparator());
@@ -139,7 +139,7 @@ namespace BooruDatasetTagManager
             tabsInfo.MouseUp += (s, e) => gridViewDS.Focus();
             splitPreview.Panel2.Controls.Add(tabsInfo);
             // a chevron at the tab strip's far right collapses the pane; a slim bar under the preview brings it back
-            // (the I key and View > Image info pane do the same; user, 2026-10-02)
+            // (the I key and View > Image info pane do the same; djdarcy, 2026-10-02)
             buttonCollapseInfo = new Button { Name = "buttonCollapseInfo", Text = "", Image = ChevronGlyph(true), ImageAlign = ContentAlignment.MiddleCenter, FlatStyle = FlatStyle.Flat, TabStop = false, Width = 26, Height = 22, Anchor = AnchorStyles.Top | AnchorStyles.Right, Cursor = Cursors.Hand };
             buttonCollapseInfo.FlatAppearance.BorderSize = 0;
             buttonCollapseInfo.Location = new Point(splitPreview.Panel2.ClientSize.Width - buttonCollapseInfo.Width - 2, 0);
@@ -505,13 +505,26 @@ namespace BooruDatasetTagManager
                 treeExtracted.Nodes.Add("reading metadata...");
             else
             {
-                // EXIF and other directories, grouped
-                foreach (var group in info.Extracted.GroupBy(r => r.Group).OrderBy(g => g.Key == "EXIF" ? 0 : g.Key == "Generation" ? 1 : 2).ThenBy(g => g.Key))
+                // EXIF and other directories, grouped. A file format's own chunks (PNG-IHDR, PNG-pHYs, JFIF...) go under
+                // one parent named for the format, with plain child labels; metadata that stands on its own across formats
+                // (Generation, EXIF, XMP, IPTC, Other text, ICC Profile) stays top level (djdarcy, 2026-10-02 21:55)
+                TreeNode Group(string label, IEnumerable<(string Group, string Key, string Value)> rows)
                 {
-                    var g = new TreeNode(group.Key + "  (" + group.Count() + ")");
-                    foreach (var r in group)
+                    var g = new TreeNode(label + "  (" + rows.Count() + ")");
+                    foreach (var r in rows)
                         g.Nodes.Add(new TreeNode(r.Key + ": " + r.Value) { Tag = r.Value, ToolTipText = r.Value });
-                    treeExtracted.Nodes.Add(g);
+                    return g;
+                }
+                var groups = info.Extracted.GroupBy(r => r.Group).Select(g => (g, place: ExtractedFormatGroup(g.Key))).ToList();
+                foreach (var (group, _) in groups.Where(x => x.place.parent == null).OrderBy(x => ExtractedGroupOrder(x.g.Key)).ThenBy(x => x.g.Key))
+                    treeExtracted.Nodes.Add(Group(group.Key, group));
+                foreach (var format in groups.Where(x => x.place.parent != null).GroupBy(x => x.place.parent).OrderBy(f => f.Key))
+                {
+                    var children = format.OrderBy(x => x.place.child).ToList();
+                    if (children.Count == 1) { treeExtracted.Nodes.Add(Group(format.Key + (children[0].place.child == format.Key ? "" : " - " + children[0].place.child), children[0].g)); continue; }
+                    var parent = new TreeNode(format.Key + "  (" + children.Sum(x => x.g.Count()) + ")");
+                    foreach (var (group, place) in children) parent.Nodes.Add(Group(place.child, group));
+                    treeExtracted.Nodes.Add(parent);
                 }
                 if (info.Extracted.Count == 0 && info.ExtractedNote == null)
                     treeExtracted.Nodes.Add("EXIF: none");
@@ -548,12 +561,12 @@ namespace BooruDatasetTagManager
                 w.Expand();
             }
             treeExtracted.EndUpdate();
-            // land on the first stage's POSITIVE text, the thing a reviewer most often wants to read (user, 2026-10-02)
+            // land on the first stage's POSITIVE text, the thing a reviewer most often wants to read (djdarcy, 2026-10-02)
             var firstPositive = FindFirstPositivePart(treeExtracted.Nodes);
             treeExtracted.SelectedNode = firstPositive;
             ShowDetail(firstPositive);
             // An image with a workflow, a prompt, or descriptive metadata (EXIF, XMP, IPTC) opens on the Extracted tab so
-            // what it carries is in view at once; structural chunks every file has (PNG-IHDR, ICC) do not count. (user, 2026-10-02)
+            // what it carries is in view at once; structural chunks every file has (PNG-IHDR, ICC) do not count. (djdarcy, 2026-10-02)
             if (info != null && info.ExtractedNote != "reading...")
             {
                 bool useful = haveWorkflow || !string.IsNullOrEmpty(info.EmbeddedPrompt)
@@ -562,6 +575,44 @@ namespace BooruDatasetTagManager
             }
             buttonCopyWorkflow.Enabled = buttonSaveWorkflow.Enabled = info?.EmbeddedWorkflowJson != null;
             buttonFingerprint.Enabled = haveWorkflow && info != null && !info.FileMissing;
+        }
+
+        /// <summary>Top-level order on the Extracted tab: what describes the image first, the colour profile after, anything unrecognised last.</summary>
+        private static int ExtractedGroupOrder(string group) =>
+            group switch { "Generation" => 0, "EXIF" => 1, "XMP" => 2, "IPTC" => 3, "Other text" => 4, "ICC Profile" => 5, _ => 6 };
+
+        private static readonly Dictionary<string, string> PngChunkNames = new Dictionary<string, string>
+        {
+            ["IHDR"] = "Image header", ["pHYs"] = "Pixel size", ["iCCP"] = "Colour profile name", ["cHRM"] = "Chromaticities",
+            ["gAMA"] = "Gamma", ["sRGB"] = "Colour space", ["tIME"] = "Last modified", ["bKGD"] = "Background colour",
+            ["PLTE"] = "Palette", ["tRNS"] = "Transparency", ["sBIT"] = "Significant bits", ["eXIf"] = "EXIF chunk",
+        };
+
+        private static readonly Dictionary<string, (string parent, string child)> FormatDirectories = new Dictionary<string, (string, string)>
+        {
+            ["PNG Chromaticities"] = ("PNG", "Chromaticities (cHRM)"),
+            ["JPEG"] = ("JPEG", "Frame"), ["JFIF"] = ("JPEG", "JFIF"), ["JFXX"] = ("JPEG", "JFIF extension"), ["Adobe JPEG"] = ("JPEG", "Adobe"),
+            ["Huffman"] = ("JPEG", "Huffman tables"), ["JpegComment"] = ("JPEG", "Comment"),
+            ["WebP"] = ("WebP", "WebP"),
+            ["GIF Header"] = ("GIF", "Header"), ["GIF Control"] = ("GIF", "Frame control"), ["GIF Animation"] = ("GIF", "Animation"),
+            ["GIF Image"] = ("GIF", "Image"), ["GIF Comment"] = ("GIF", "Comment"),
+            ["BMP Header"] = ("BMP", "Header"),
+        };
+
+        /// <summary>
+        /// The file format a metadata directory belongs to and a plain label for it under that format, or (null, null) for
+        /// a group that stays top level. The one place to extend when a new format appears, as the EXIF fold in DazzleMetadata is.
+        /// </summary>
+        private static (string parent, string child) ExtractedFormatGroup(string group)
+        {
+            if (group == null) return (null, null);
+            if (FormatDirectories.TryGetValue(group, out var known)) return known;
+            if (group.StartsWith("PNG-", StringComparison.Ordinal))
+            {
+                string chunk = group.Substring(4);
+                return ("PNG", PngChunkNames.TryGetValue(chunk, out var name) ? name + " (" + chunk + ")" : chunk);
+            }
+            return (null, null);
         }
 
         /// <summary>

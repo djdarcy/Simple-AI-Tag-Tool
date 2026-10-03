@@ -68,7 +68,7 @@ namespace BooruDatasetTagManager
             textChatInstruction = new TextBox { Name = "textChatInstruction", Multiline = true, Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical, AcceptsReturn = true, Font = gridFont };
 
             // the Result panel: what the tools can change, as it stands, and the last change with its Undo
-            var result = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, AutoScroll = true, Padding = new Padding(4, 2, 4, 2) };
+            var result = new TableLayoutPanel { Name = "tableChatResult", Dock = DockStyle.Fill, ColumnCount = 2, AutoScroll = true, Padding = new Padding(4, 2, 4, 2) };
             result.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); result.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             Label Key(string t) => new Label { Text = t, AutoSize = true, Font = new Font(gridFont, FontStyle.Bold), Margin = new Padding(2, 4, 8, 2) };
             Label Val(string name) => new Label { Name = name, AutoSize = true, Font = gridFont, Margin = new Padding(2, 4, 2, 2), MaximumSize = new Size(900, 0) };
@@ -90,6 +90,7 @@ namespace BooruDatasetTagManager
             splitChatInstruction.Panel2.Controls.Add(result);
             splitChatInstruction.Resize += (s, e) => { if (!chatInstructionSplitPlaced && splitChatInstruction.Height >= 100) { chatInstructionSplitPlaced = true; int want = Program.Settings.DazzleChatInstructionHeight > 0 ? Program.Settings.DazzleChatInstructionHeight : gridFont.Height * 4 + 10; try { splitChatInstruction.SplitterDistance = Math.Max(splitChatInstruction.Panel1MinSize, Math.Min(want, splitChatInstruction.Height - splitChatInstruction.Panel2MinSize - 5)); } catch (Exception) { } } };
             splitChatInstruction.SplitterMoved += (s, e) => { if (chatInstructionSplitPlaced && panelChat.Visible) Program.Settings.DazzleChatInstructionHeight = splitChatInstruction.SplitterDistance; };
+            LinkSkillSplitter(splitChatInstruction, textChatInstruction, () => labelChatContext);
             panelChat.Controls.Add(splitChatInstruction);
             panelChat.Controls.Add(strip);
             foreach (var c in new Control[] { panelChat, result }) typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(c, true);
@@ -97,7 +98,7 @@ namespace BooruDatasetTagManager
             // the bottom half: transcript over an input line
             panelChatBottom = new Panel { Dock = DockStyle.Fill, Name = "panelChatBottom", Visible = false };
             transcript = new RichTextBox { Name = "transcript", Dock = DockStyle.Fill, ReadOnly = true, BackColor = SystemColors.Window, Font = gridFont, DetectUrls = false, HideSelection = false };
-            // the transcript keeps the focus a click gives it, so text can be selected and copied (the person, 2026-10-02);
+            // the transcript keeps the focus a click gives it, so text can be selected and copied (djdarcy, 2026-10-02);
             // typing a character there goes on in the input box instead, carrying that character
             transcript.KeyPress += (s, e) =>
             {
@@ -122,7 +123,7 @@ namespace BooruDatasetTagManager
             buttonChatStop.Click += (s, e) => chatCts?.Cancel();
             inputRow.Controls.Add(textChatInput); inputRow.Controls.Add(buttonSend); inputRow.Controls.Add(buttonChatStop);
             // the input grows with what is typed, wrapped lines included, from two lines up to six, then scrolls; it
-            // shrinks again when the message is sent (the person, 2026-10-02: "so users can see all the text they're typing")
+            // shrinks again when the message is sent (djdarcy, 2026-10-02: "so users can see all the text they're typing")
             int lineHeight = TextRenderer.MeasureText("Ag", gridFont).Height;
             void FitChatInput()
             {
@@ -210,7 +211,7 @@ namespace BooruDatasetTagManager
             var skill = DazzleData.FindSkill(ChatKind, name, Program.Settings.DazzleShowHouseSkills);
             try { loadedChatSkillText = skill != null ? File.ReadAllText(skill.Path).Trim() : ""; } catch (Exception) { loadedChatSkillText = ""; }
             textChatInstruction.Text = loadedChatSkillText;
-            // a list refresh re-selects the same skill; only a real change is worth a line (user's session, 2026-10-02)
+            // a list refresh re-selects the same skill; only a real change is worth a line (djdarcy, 2026-10-02)
             if (changed && chatHistory != null && chatHistory.Count > 1) AppendTranscript("skill changed to '" + name + "' -- takes effect at the next New session", ToolColor, true);
         }
         private string loadedChatSkillName;
@@ -237,7 +238,7 @@ namespace BooruDatasetTagManager
         {
             string caption = textBoxTags != null && textBoxTags.Enabled ? textBoxTags.Text.Trim() : "";
             string refined = currentInfo?.Path != null && proposals.TryGetValue(currentInfo.Path, out var p) ? p.right : "";
-            string rules = string.Join("\n", folderRules.Where(r => r.Error == null && !r.IsComment && !r.IsEmpty).Select(r => r.Line));
+            string rules = string.Join("\n", ApplicableRuleLines());   // only the rules that apply to this image's caption, as sent automatically
             return text.Replace("{caption}", caption.Length > 0 ? caption : "(none)")
                        .Replace("{refined}", refined.Length > 0 ? refined : "(none yet)")
                        .Replace("{file}", currentInfo != null ? Path.GetFileName(currentInfo.Path) : "(none)")
@@ -379,7 +380,7 @@ namespace BooruDatasetTagManager
                         {
                             ["file"] = Path.GetFileName(path), ["folder"] = Path.GetDirectoryName(path),
                             ["caption"] = textBoxTags != null && textBoxTags.Enabled ? textBoxTags.Text.Trim() : "",
-                            // the folder's rules and the Check for list are left out (user, 2026-10-02): sent only when a
+                            // the folder's rules and the Check for list are left out (djdarcy, 2026-10-02): sent only when a
                             // skill places {rules} or {checks}, until Settings > AI makes automatic sending a choice
                             ["latest_proposal"] = refined, ["position"] = DatasetPosition(path).position + " of " + DatasetPosition(path).total,
                         };
@@ -478,7 +479,7 @@ namespace BooruDatasetTagManager
             UpdateContextMeter();
         }
 
-        /// <summary>Append a line; the model's light Markdown -- **bold** and `code` -- is rendered rather than shown raw (user's session, 2026-10-02).
+        /// <summary>Append a line; the model's light Markdown -- **bold** and `code` -- is rendered rather than shown raw (djdarcy, 2026-10-02).
         /// A <paramref name="turnStart"/> entry ("You: ", "AI: ", "AI Refine proposed: ") gets one blank line above it, unless the
         /// transcript is empty, and its label in bold; tool, system and error lines stay attached to the turn around them.</summary>
         private void AppendTranscript(string text, Color color, bool italic, bool turnStart = false)
